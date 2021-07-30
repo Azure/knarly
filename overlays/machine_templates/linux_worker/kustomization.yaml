@@ -1,0 +1,5 @@
+resources:
+  - ../../../bases/azure_machine_template.yaml
+nameSuffix: -linux-node
+patchesStrategicMerge:
+  - patch.yaml

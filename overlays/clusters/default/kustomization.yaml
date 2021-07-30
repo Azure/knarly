@@ -1,0 +1,11 @@
+resources:
+  - ../../../bases/cluster.yaml
+  - ../../../bases/azure_cluster.yaml
+  - ../../../bases/cluster_identity.yaml
+  - ../../machine_templates/control_plane
+  - ../../kubeadm_control_plane/default
+  - ../../kubeadm_config_templates/worker
+  - md-0
+patchesStrategicMerge:
+  - infra_ref_patch.yaml
+  - ../../identities/cluster_patch.yaml

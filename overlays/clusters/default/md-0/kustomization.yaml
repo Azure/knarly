@@ -1,0 +1,4 @@
+resources:
+  - ../../../machine_deployments/linux-default
+  - ../../../machine_templates/linux_worker
+nameSuffix: "-0"

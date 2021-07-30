@@ -1,0 +1,63 @@
+---
+kind: Cluster
+apiVersion: cluster.x-k8s.io/v1alpha4
+metadata:
+  name: "${CLUSTER_NAME}"
+spec:
+  controlPlaneRef:
+    kind: KubeadmControlPlane
+    apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
+    name: ${CLUSTER_NAME}-kcp-default
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
+kind: KubeadmControlPlane
+metadata:
+  name: ${CLUSTER_NAME}-kcp-default
+spec:
+  machineTemplate:
+    infrastructureRef:
+      kind: AzureMachineTemplate
+      apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+      name: "${CLUSTER_NAME}-mt-cp"
+  kubeadmConfigSpec:
+    files:
+      - contentFrom:
+          secret:
+            name: "${CLUSTER_NAME}-mt-cp-azure-json"
+            key: control-plane-azure.json
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: "0644"
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
+kind: KubeadmConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}-kct-worker
+spec:
+  template:
+    spec:
+      files:
+        - contentFrom:
+            secret:
+              key: worker-node-azure.json
+              name: ${CLUSTER_NAME}-md-linux-default-0-azure-json
+          owner: root:root
+          path: /etc/kubernetes/azure.json
+          permissions: "0644"
+---
+apiVersion: cluster.x-k8s.io/v1alpha4
+kind: MachineDeployment
+metadata:
+  name: "${CLUSTER_NAME}-md-linux-default-0"
+spec:
+  template:
+    spec:
+      bootstrap:
+        configRef:
+          name: "${CLUSTER_NAME}-kct-worker"
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
+          kind: KubeadmConfigTemplate
+      infrastructureRef:
+        name: "${CLUSTER_NAME}-mt-linux-node-0"
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+        kind: AzureMachineTemplate

@@ -1,0 +1,5 @@
+resources:
+  - ../../../bases/kubeadm_config_template.yaml
+nameSuffix: -worker
+patchesStrategicMerge:
+  - patch.yaml
