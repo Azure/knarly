@@ -2,7 +2,7 @@ managementClusterName: knarly-e2e
 
 images:
   - name: ${MANAGER_IMAGE}
-    loadBehavior: mustLoad
+    loadBehavior: tryLoad
 
 providers:
   - name: cluster-api
@@ -53,6 +53,8 @@ providers:
         files:
           - sourcePath: "../data/shared/infra_metadata.yaml"
         replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
           - old: "--v=0"
             new: "--v=2"
     files:
