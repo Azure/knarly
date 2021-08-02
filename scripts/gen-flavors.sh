@@ -5,7 +5,7 @@ set -o nounset
 set -o pipefail
 
 root=$(dirname "${BASH_SOURCE[0]}")/..
-kustomize="kustomize"
+kustomize="${root}/hack/bin/kustomize"
 flavors_dir="${root}/templates/flavors/"
 overlays_dir="${root}/overlays/clusters/"
 mkdir -p "${flavors_dir}"
