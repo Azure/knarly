@@ -1,6 +1,7 @@
 resources:
   - ../../../bases/cluster.yaml
   - ../../../bases/azure_cluster.yaml
+  - ../../../bases/cni_resource_set.yaml
   - ../../../bases/cluster_identity.yaml
   - ../../machine_templates/control_plane
   - ../../kubeadm_control_plane/default
@@ -9,3 +10,14 @@ resources:
 patchesStrategicMerge:
   - infra_ref_patch.yaml
   - ../../identities/cluster_patch.yaml
+  - ../../calico/cluster_cni.yaml
+configMapGenerator:
+  - name: cni-${CLUSTER_NAME}-calico
+    files:
+      - resources=../../calico/calico.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    type: generated
+  annotations:
+    note: generated

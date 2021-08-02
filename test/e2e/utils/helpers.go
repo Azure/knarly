@@ -1,4 +1,4 @@
-package e2e
+package utils
 
 import (
 	"bytes"
@@ -25,6 +25,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/test/framework"
+	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 )
 
 func Byf(format string, a ...interface{}) {
@@ -49,9 +50,9 @@ func log(level string, format string, args ...interface{}) {
 	fmt.Fprintf(GinkgoWriter, nowStamp()+": "+level+": "+format+"\n", args...)
 }
 
-// execOnHost runs the specified command directly on a node's host, using an SSH connection
+// ExecOnHost runs the specified command directly on a node's host, using an SSH connection
 // proxied through a control plane host.
-func execOnHost(controlPlaneEndpoint, hostname, port string, f io.StringWriter, command string,
+func ExecOnHost(controlPlaneEndpoint, hostname, port string, f io.StringWriter, command string,
 	args ...string) error {
 	sshConfig, err := newSSHConfig()
 	if err != nil {
@@ -139,36 +140,36 @@ func publicKeyFile(file string) (ssh.AuthMethod, error) {
 	return ssh.PublicKeys(signer), nil
 }
 
-// fileOnHost creates the specified path, including parent directories if needed.
-func fileOnHost(path string) (*os.File, error) {
+// FileOnHost creates the specified path, including parent directories if needed.
+func FileOnHost(path string) (*os.File, error) {
 	if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
 		return nil, err
 	}
 	return os.Create(path)
 }
 
-// logCheckpoint prints a message indicating the start or end of the current test spec,
+// LogCheckpoint prints a message indicating the start or end of the current test spec,
 // including which Ginkgo node it's running on.
 //
 // Example output:
 //   INFO: "With 1 worker node" started at Tue, 22 Sep 2020 13:19:08 PDT on Ginkgo node 2 of 3
 //   INFO: "With 1 worker node" ran for 18m34s on Ginkgo node 2 of 3
-func logCheckpoint(specTimes map[string]time.Time) {
+func LogCheckpoint(specTimes map[string]time.Time) {
 	text := CurrentGinkgoTestDescription().TestText
 	start, started := specTimes[text]
 	if !started {
 		start = time.Now()
 		specTimes[text] = start
-		fmt.Fprintf(GinkgoWriter, "INFO: \"%s\" started at %s on Ginkgo node %d of %d\n", text,
+		Logf("INFO: \"%s\" started at %s on Ginkgo node %d of %d\n", text,
 			start.Format(time.RFC1123), GinkgoParallelNode(), config.GinkgoConfig.ParallelTotal)
 	} else {
 		elapsed := time.Since(start)
-		fmt.Fprintf(GinkgoWriter, "INFO: \"%s\" ran for %s on Ginkgo node %d of %d\n", text,
+		Logf("INFO: \"%s\" ran for %s on Ginkgo node %d of %d\n", text,
 			elapsed.Round(time.Second), GinkgoParallelNode(), config.GinkgoConfig.ParallelTotal)
 	}
 }
 
-type cleanupInput struct {
+type CleanupInput struct {
 	SpecName          string
 	ClusterProxy      framework.ClusterProxy
 	ArtifactFolder    string
@@ -178,12 +179,13 @@ type cleanupInput struct {
 	IntervalsGetter   func(spec, key string) []interface{}
 	SkipCleanup       bool
 	AdditionalCleanup func()
+	E2eConfig         *clusterctl.E2EConfig
 }
 
-func dumpSpecResourcesAndCleanup(ctx context.Context, input cleanupInput) {
+func DumpSpecResourcesAndCleanup(ctx context.Context, input CleanupInput) {
 	defer func() {
 		input.CancelWatches()
-		redactLogs()
+		redactLogs(input.E2eConfig)
 	}()
 
 	if input.Cluster == nil {
@@ -243,7 +245,7 @@ func ExpectResourceGroupToBe404(ctx context.Context) {
 	Expect(azure.ResourceNotFound(err)).To(BeTrue(), "The resource group in Azure still exists. After deleting the cluster all of the Azure resources should also be deleted.")
 }
 
-func setupSpecNamespace(ctx context.Context, namespaceName string, clusterProxy framework.ClusterProxy, artifactFolder string) (*corev1.Namespace, context.CancelFunc, error) {
+func SetupSpecNamespace(ctx context.Context, namespaceName string, clusterProxy framework.ClusterProxy, artifactFolder string) (*corev1.Namespace, context.CancelFunc, error) {
 	Byf("Creating namespace %q for hosting the cluster", namespaceName)
 	Logf("starting to create namespace for hosting the %q test spec", namespaceName)
 	logPath := filepath.Join(artifactFolder, "clusters", clusterProxy.GetName())
@@ -279,9 +281,23 @@ func setupSpecNamespace(ctx context.Context, namespaceName string, clusterProxy 
 	return ns, cancelWatches, nil
 }
 
-func redactLogs() {
+func redactLogs(e2eConfig *clusterctl.E2EConfig) {
 	By("Redacting sensitive information from logs")
 	Expect(e2eConfig.Variables).To(HaveKey(RedactLogScriptPath))
 	cmd := exec.Command(e2eConfig.GetVariable(RedactLogScriptPath))
 	cmd.Run()
+}
+
+// GetClusterName gets the cluster name for the test cluster
+// and sets the environment variables that depend on it.
+func GetClusterName(prefix, specName string) string {
+	clusterName := os.Getenv("CLUSTER_NAME")
+	if clusterName == "" {
+		clusterName = fmt.Sprintf("%s-%s", prefix, specName)
+	}
+
+	Logf("INFO: Cluster name is %s\n", clusterName)
+	Expect(os.Setenv(AzureResourceGroup, clusterName)).NotTo(HaveOccurred())
+	Expect(os.Setenv(AzureVNetName, fmt.Sprintf("%s-vnet", clusterName))).NotTo(HaveOccurred())
+	return clusterName
 }

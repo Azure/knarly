@@ -19,6 +19,8 @@ require (
 	k8s.io/api v0.21.2
 	k8s.io/apimachinery v0.21.2
 	k8s.io/client-go v0.21.2
+	k8s.io/kube-openapi v0.0.0-20210421082810-95288971da7e // indirect
+	k8s.io/utils v0.0.0-20210527160623-6fdb442a123b
 	sigs.k8s.io/cluster-api v0.4.0
 	sigs.k8s.io/cluster-api-provider-azure v0.5.1
 	sigs.k8s.io/cluster-api/test v0.4.0

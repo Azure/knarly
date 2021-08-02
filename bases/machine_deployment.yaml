@@ -5,3 +5,4 @@ metadata:
 spec:
   clusterName: "${CLUSTER_NAME}"
   replicas: ${WORKER_MACHINE_COUNT}
+  selector: {}

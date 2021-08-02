@@ -8,18 +8,6 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 )
 
-const (
-	AzureResourceGroup             = "AZURE_RESOURCE_GROUP"
-	AzureVNetName                  = "AZURE_VNET_NAME"
-	ClusterIdentityName            = "CLUSTER_IDENTITY_NAME"
-	ClusterIdentityNamespace       = "CLUSTER_IDENTITY_NAMESPACE"
-	ClusterIdentitySecretName      = "AZURE_CLUSTER_IDENTITY_SECRET_NAME"
-	ClusterIdentitySecretNamespace = "AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE"
-	AzureClientSecret              = "AZURE_CLIENT_SECRET"
-	SshPort                        = "22"
-	RedactLogScriptPath            = "REDACT_LOG_SCRIPT"
-)
-
 var (
 	// configPath is the path to the e2e config file.
 	configPath string

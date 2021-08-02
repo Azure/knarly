@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	aadpodv1 "github.com/Azure/aad-pod-identity/pkg/apis/aadpodidentity/v1"
+	"github.com/azure/knarly/test/e2e/utils"
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
 	"github.com/onsi/ginkgo/reporters"
@@ -29,7 +30,7 @@ func TestE2E(t *testing.T) {
 	RegisterFailHandler(Fail)
 	junitPath := filepath.Join(artifactFolder, fmt.Sprintf("junit.e2e_suite.%d.xml", config.GinkgoConfig.ParallelNode))
 	junitReporter := reporters.NewJUnitReporter(junitPath)
-	RunSpecsWithDefaultAndCustomReporters(t, "capz-e2e", []Reporter{junitReporter})
+	RunSpecsWithDefaultAndCustomReporters(t, "knarly-e2e", []Reporter{junitReporter})
 }
 
 // Using a SynchronizedBeforeSuite for controlling how to create resources shared across ParallelNodes (~ginkgo threads).
@@ -43,10 +44,10 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	By("Initializing a runtime.Scheme with all the GVK relevant for this test")
 	scheme := initScheme()
 
-	Byf("Loading the e2e test configuration from %q", configPath)
+	utils.Byf("Loading the e2e test configuration from %q", configPath)
 	e2eConfig = loadE2EConfig(configPath)
 
-	Byf("Creating a clusterctl local repository into %q", artifactFolder)
+	utils.Byf("Creating a clusterctl local repository into %q", artifactFolder)
 	clusterctlConfigPath = createClusterctlLocalRepository(e2eConfig, filepath.Join(artifactFolder, "repository"))
 
 	By("Setting up the bootstrap cluster")

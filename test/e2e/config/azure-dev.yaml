@@ -67,10 +67,11 @@ variables:
   # https://github.com/kubernetes-sigs/cloud-provider-azure/issues/706
   WINDOWS_KUBERNETES_VERSION: "${WINDOWS_KUBERNETES_VERSION:-v1.19.11}"
   AKS_KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.19.9}"
-  CNI: "${PWD}/templates/addons/calico.yaml"
+  CNI: "${PWD}/overlays/calico/calico.yaml"
   REDACT_LOG_SCRIPT: "${PWD}/hack/log/redact.sh"
   EXP_AKS: "true"
   EXP_MACHINE_POOL: "true"
+  EXP_CLUSTER_RESOURCE_SET: "true"
   MULTI_TENANCY_IDENTITY_NAME: "multi-tenancy-identity"
   CLUSTER_IDENTITY_NAME: "cluster-identity"
   NODE_DRAIN_TIMEOUT: "60s"

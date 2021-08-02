@@ -26,6 +26,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
 	autorest "github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/azure/knarly/test/e2e/utils"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
@@ -39,7 +40,7 @@ import (
 	kinderrors "sigs.k8s.io/kind/pkg/errors"
 )
 
-// AzureLogCollector collects logs from a CAPZ workload cluster.
+// AzureLogCollector collects logs from a workload cluster.
 type AzureLogCollector struct{}
 
 var _ framework.ClusterLogCollector = &AzureLogCollector{}
@@ -112,19 +113,19 @@ func (k AzureLogCollector) CollectMachinePoolLog(ctx context.Context, management
 
 // collectLogsFromNode collects logs from various sources by ssh'ing into the node
 func collectLogsFromNode(ctx context.Context, managementClusterClient client.Client, cluster *clusterv1.Cluster, hostname string, isWindows bool, outputPath string) error {
-	Logf("INFO: Collecting logs for node %s in cluster %s in namespace %s\n", hostname, cluster.Name, cluster.Namespace)
+	utils.Logf("INFO: Collecting logs for node %s in cluster %s in namespace %s\n", hostname, cluster.Name, cluster.Namespace)
 
 	controlPlaneEndpoint := cluster.Spec.ControlPlaneEndpoint.Host
 
 	execToPathFn := func(outputFileName, command string, args ...string) func() error {
 		return func() error {
-			f, err := fileOnHost(filepath.Join(outputPath, outputFileName))
+			f, err := utils.FileOnHost(filepath.Join(outputPath, outputFileName))
 			if err != nil {
 				return err
 			}
 			defer f.Close()
 			return retryWithExponentialBackOff(func() error {
-				return execOnHost(controlPlaneEndpoint, hostname, SshPort, f, command, args...)
+				return utils.ExecOnHost(controlPlaneEndpoint, hostname, utils.SshPort, f, command, args...)
 			})
 		}
 	}
@@ -157,7 +158,7 @@ func getHostname(m *clusterv1.Machine, isWindows bool) string {
 		if len(m.Status.Addresses) > 0 {
 			hostname = m.Status.Addresses[0].Address
 		} else {
-			Logf("INFO: Unable to collect logs as node doesn't have addresses")
+			utils.Logf("INFO: Unable to collect logs as node doesn't have addresses")
 		}
 	}
 	return hostname
@@ -330,7 +331,7 @@ func windowsNetworkLogs(execToPathFn func(outputFileName string, command string,
 
 // collectVMBootLog collects boot logs of the vm by using azure boot diagnostics.
 func collectVMBootLog(ctx context.Context, am *v1alpha4.AzureMachine, outputPath string) error {
-	Logf("INFO: Collecting boot logs for AzureMachine %s\n", am.GetName())
+	utils.Logf("INFO: Collecting boot logs for AzureMachine %s\n", am.GetName())
 
 	resourceId := strings.TrimPrefix(*am.Spec.ProviderID, azure.ProviderIDPrefix)
 	resource, err := autorest.ParseResourceID(resourceId)
@@ -368,7 +369,7 @@ func collectVMSSBootLog(ctx context.Context, providerID string, outputPath strin
 		return errors.Wrap(err, "failed to parse resource id")
 	}
 
-	Logf("INFO: Collecting boot logs for VMSS instance %s of scale set %s\n", instanceId, resource.ResourceName)
+	utils.Logf("INFO: Collecting boot logs for VMSS instance %s of scale set %s\n", instanceId, resource.ResourceName)
 
 	settings, err := auth.GetSettingsFromEnvironment()
 	if err != nil {
