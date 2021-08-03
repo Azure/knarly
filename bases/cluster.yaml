@@ -1,0 +1,12 @@
+kind: Cluster
+apiVersion: cluster.x-k8s.io/v1alpha4
+metadata:
+  name: "${CLUSTER_NAME}"
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks: [ "192.168.0.0/16" ]
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+    kind: AzureCluster
+    name: "${CLUSTER_NAME}"

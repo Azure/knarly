@@ -1,0 +1,10 @@
+resources:
+  - ../../../bases/cluster.yaml
+  - ../../../bases/azure_managed_cluster.yaml
+  - ../../../bases/cluster_identity.yaml
+  - ../../../bases/azure_managed_control_plane.yaml
+  - nodepool0
+  - nodepool1
+patchesStrategicMerge:
+  - infra_ref_patch.yaml
+  - ../../identities/azure_managed_control_plane_patch.yaml

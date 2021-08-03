@@ -1,0 +1,96 @@
+managementClusterName: knarly-e2e
+
+images:
+  - name: ${MANAGER_IMAGE}
+    loadBehavior: tryLoad
+
+providers:
+  - name: cluster-api
+    type: CoreProvider
+    versions:
+      - name: v0.4.0
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.0/core-components.yaml
+        type: url
+        files:
+          - sourcePath: "../data/shared/metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+          - old: "--leader-elect"
+            new: "--leader-elect=false"
+  - name: kubeadm
+    type: BootstrapProvider
+    versions:
+      - name: v0.4.0
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.0/bootstrap-components.yaml
+        type: url
+        files:
+          - sourcePath: "../data/shared/metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+          - old: "--leader-elect"
+            new: "--leader-elect=false"
+  - name: kubeadm
+    type: ControlPlaneProvider
+    versions:
+      - name: v0.4.0
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.0/control-plane-components.yaml
+        type: url
+        files:
+          - sourcePath: "../data/shared/metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+          - old: "--leader-elect"
+            new: "--leader-elect=false"
+  - name: azure
+    type: InfrastructureProvider
+    versions:
+      - name: v0.5.1
+        value: https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/v0.5.1/infrastructure-components.yaml
+        type: url
+        files:
+          - sourcePath: "../data/shared/infra_metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+          - old: "--v=0"
+            new: "--v=2"
+    files:
+      - sourcePath: "../data/shared/metadata.yaml"
+      - sourcePath: "${PWD}/templates/flavors/cluster-template-default.yaml"
+        targetName: "cluster-template-default.yaml"
+      - sourcePath: "${PWD}/templates/flavors/cluster-template-aks.yaml"
+        targetName: "cluster-template-aks.yaml"
+
+variables:
+  KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.21.3}"
+  # using a different version for windows because of an issue on azure cloud provider
+  # that only affects windows and external load balancer
+  # https://github.com/kubernetes-sigs/cloud-provider-azure/issues/706
+  WINDOWS_KUBERNETES_VERSION: "${WINDOWS_KUBERNETES_VERSION:-v1.19.11}"
+  AKS_KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.19.9}"
+  CNI: "${PWD}/overlays/calico/calico.yaml"
+  REDACT_LOG_SCRIPT: "${PWD}/hack/log/redact.sh"
+  EXP_AKS: "true"
+  EXP_MACHINE_POOL: "true"
+  EXP_CLUSTER_RESOURCE_SET: "true"
+  MULTI_TENANCY_IDENTITY_NAME: "multi-tenancy-identity"
+  CLUSTER_IDENTITY_NAME: "cluster-identity"
+  NODE_DRAIN_TIMEOUT: "60s"
+
+intervals:
+  default/wait-controllers: ["3m", "10s"]
+  default/wait-cluster: ["20m", "10s"]
+  default/wait-control-plane: ["20m", "10s"]
+  default/wait-worker-nodes: ["20m", "10s"]
+  default/wait-delete-cluster: ["30m", "10s"]
+  default/wait-machine-upgrade: ["60m", "10s"]
+  default/wait-machine-remediation: ["30m", "10s"]
+  default/wait-deployment: ["15m", "10s"]
+  default/wait-deployment-available: ["15m", "10s"]
+  default/wait-job: ["5m", "10s"]
+  default/wait-service: ["5m", "10s"]
+  default/wait-machine-pool-nodes: ["30m", "10s"]
+  node-drain/wait-machine-deleted: [ "10m", "10s" ]

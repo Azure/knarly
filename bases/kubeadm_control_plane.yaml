@@ -1,0 +1,67 @@
+kind: KubeadmControlPlane
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha4
+metadata:
+  name: "${CLUSTER_NAME}-kcp"
+spec:
+  replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+  kubeadmConfigSpec:
+    initConfiguration:
+      nodeRegistration:
+        name: '{{ ds.meta_data["local_hostname"] }}'
+        kubeletExtraArgs:
+          cloud-provider: azure
+          cloud-config: /etc/kubernetes/azure.json
+          azure-container-registry-config: /etc/kubernetes/azure.json
+    joinConfiguration:
+      nodeRegistration:
+        name: '{{ ds.meta_data["local_hostname"] }}'
+        kubeletExtraArgs:
+          cloud-provider: azure
+          cloud-config: /etc/kubernetes/azure.json
+          azure-container-registry-config: /etc/kubernetes/azure.json
+    clusterConfiguration:
+      apiServer:
+        timeoutForControlPlane: 20m
+        extraArgs:
+          cloud-provider: azure
+          cloud-config: /etc/kubernetes/azure.json
+        extraVolumes:
+          - hostPath: /etc/kubernetes/azure.json
+            mountPath: /etc/kubernetes/azure.json
+            name: cloud-config
+            readOnly: true
+      controllerManager:
+        extraArgs:
+          cloud-provider: azure
+          cloud-config: /etc/kubernetes/azure.json
+          allocate-node-cidrs: "false"
+          cluster-name: ${CLUSTER_NAME}
+        extraVolumes:
+          - hostPath: /etc/kubernetes/azure.json
+            mountPath: /etc/kubernetes/azure.json
+            name: cloud-config
+            readOnly: true
+      etcd:
+        local:
+          dataDir: "/var/lib/etcddisk/etcd"
+    diskSetup:
+      partitions:
+        - device: /dev/disk/azure/scsi1/lun0
+          tableType: gpt
+          layout: true
+          overwrite: false
+      filesystems:
+        - label: etcd_disk
+          filesystem: ext4
+          device: /dev/disk/azure/scsi1/lun0
+          extraOpts:
+            - "-E"
+            - "lazy_itable_init=1,lazy_journal_init=1"
+        - label: ephemeral0
+          filesystem: ext4
+          device: ephemeral0.1
+          replaceFS: ntfs
+    mounts:
+      - - LABEL=etcd_disk
+        - /var/lib/etcddisk
+  version: "${KUBERNETES_VERSION}"

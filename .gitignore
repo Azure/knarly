@@ -13,3 +13,13 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+hack/bin
+
+.idea
+
+.sshkey*
+
+_artifacts
+
+/test/e2e/config/azure-dev-envsubst.yaml

@@ -1,0 +1,5 @@
+resources:
+  - ../../../bases/kubeadm_control_plane.yaml
+nameSuffix: -default
+patchesStrategicMerge:
+  - patch.yaml
