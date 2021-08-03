@@ -61,9 +61,11 @@ providers:
       - sourcePath: "../data/shared/metadata.yaml"
       - sourcePath: "${PWD}/templates/flavors/cluster-template-default.yaml"
         targetName: "cluster-template-default.yaml"
+      - sourcePath: "${PWD}/templates/flavors/cluster-template-aks.yaml"
+        targetName: "cluster-template-aks.yaml"
 
 variables:
-  KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.21.2}"
+  KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.21.3}"
   # using a different version for windows because of an issue on azure cloud provider
   # that only affects windows and external load balancer
   # https://github.com/kubernetes-sigs/cloud-provider-azure/issues/706

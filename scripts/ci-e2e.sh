@@ -33,7 +33,7 @@ cd "${REPO_ROOT}" || exit 1
 : "${AZURE_CLIENT_SECRET:?Environment variable empty or not defined.}"
 
 get_random_region() {
-    local REGIONS=("northcentralus" "westus" "westus2" "canadacentral" "eastus" "eastus2" "westeurope" "uksouth" "northeurope" "francecentral")
+    local REGIONS=("westus2" "eastus" "eastus2" "westeurope" "uksouth")
     echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
 }
 

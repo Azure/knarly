@@ -1,0 +1,6 @@
+resources:
+  - ../../../../bases/azure_managed_machinepool.yaml
+  - ../../../../bases/machinepool.yaml
+nameSuffix: "1"
+patchesStrategicMerge:
+  - infra_ref_patch.yaml

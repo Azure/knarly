@@ -1,0 +1,14 @@
+---
+kind: Cluster
+apiVersion: cluster.x-k8s.io/v1alpha4
+metadata:
+  name: "${CLUSTER_NAME}"
+spec:
+  controlPlaneRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+    kind: AzureManagedControlPlane
+    name: ${CLUSTER_NAME}
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
+    kind: AzureManagedCluster
+    name: ${CLUSTER_NAME}

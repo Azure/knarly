@@ -10,4 +10,7 @@ const (
 	AzureClientSecret              = "AZURE_CLIENT_SECRET"
 	SshPort                        = "22"
 	RedactLogScriptPath            = "REDACT_LOG_SCRIPT"
+	AKSKubernetesVersion           = "AKS_KUBERNETES_VERSION"
+	AzureLocation                  = "AZURE_LOCATION"
+	ManagedClustersResourceType    = "managedClusters"
 )
