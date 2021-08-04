@@ -101,7 +101,7 @@ var _ = Describe("Workload cluster creation", func() {
 		utils.LogCheckpoint(specTimes)
 	})
 
-	/*It("With the default flavor", func() {
+	It("With the default flavor", func() {
 		clusterName = utils.GetClusterName(clusterNamePrefix, "default")
 		clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 			ClusterProxy: bootstrapClusterProxy,
@@ -128,7 +128,7 @@ var _ = Describe("Workload cluster creation", func() {
 				Cluster:               result.Cluster,
 			})
 		})
-	})*/
+	})
 
 	It("With the aks flavor", func() {
 		clusterName = utils.GetClusterName(clusterNamePrefix, "aks")
