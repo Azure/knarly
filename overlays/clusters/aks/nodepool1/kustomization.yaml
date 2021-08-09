@@ -1,6 +1,3 @@
 resources:
-  - ../../../../bases/azure_managed_machinepool.yaml
-  - ../../../../bases/machinepool.yaml
+  - ../../../nodepools/aks
 nameSuffix: "1"
-patchesStrategicMerge:
-  - infra_ref_patch.yaml
