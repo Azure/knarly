@@ -56,7 +56,7 @@ providers:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
           - old: "--v=0"
-            new: "--v=2"
+            new: "--v=2 --azuremachine-concurrency=1000 --azuremachinepoolmachine-concurrency=1000"
     files:
       - sourcePath: "../data/shared/metadata.yaml"
       - sourcePath: "${PWD}/templates/flavors/cluster-template-default.yaml"

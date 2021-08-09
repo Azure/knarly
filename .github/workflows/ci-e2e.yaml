@@ -22,4 +22,5 @@ jobs:
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_CONTROL_PLANE_MACHINE_TYPE: Standard_D4s_v3
         run: scripts/ci-e2e.sh
