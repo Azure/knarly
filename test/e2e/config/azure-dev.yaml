@@ -48,7 +48,7 @@ providers:
     type: InfrastructureProvider
     versions:
       - name: v0.5.1
-        value: https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/v0.5.1/infrastructure-components.yaml
+        value: file://${PWD}/infrastructure-components.yaml
         type: url
         files:
           - sourcePath: "../data/shared/infra_metadata.yaml"
@@ -56,7 +56,11 @@ providers:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
           - old: "--v=0"
-            new: "--v=2 --azuremachine-concurrency=1000 --azuremachinepoolmachine-concurrency=1000"
+            new: "--v=2"
+          - old: "--azuremachine-concurrency=10"
+            new: "--azuremachine-concurrency=1000"
+          - old: "--azuremachinepoolmachine-concurrency=10"
+            new: "--azuremachinepoolmachine-concurrency=1000"
     files:
       - sourcePath: "../data/shared/metadata.yaml"
       - sourcePath: "${PWD}/templates/flavors/cluster-template-default.yaml"
