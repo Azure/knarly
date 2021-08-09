@@ -1,0 +1,11 @@
+nameReference:
+  - kind: MachinePool
+    group: cluster.x-k8s.io
+    version: v1alpha4
+    fieldSpecs:
+      - path: spec/template/spec/infrastructureRef/name
+        kind: AzureManagedMachinePool
+
+namePrefix:
+  - path: metadata/name
+  - path: spec/template/spec/infrastructureRef/name
