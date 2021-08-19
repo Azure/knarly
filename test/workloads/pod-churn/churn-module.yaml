@@ -7,7 +7,7 @@
 {{$previousRoundNum := SubtractInt .roundNumber 1}}
 
 steps:
-- name: Test - churn (round {{$.roundNumber}})
+- name: {{$.desc}} (rnd {{$.roundNumber}})
   phases:  # phases run concurrently if they are within the same step
   - namespaceRange:
       min: 1
@@ -27,7 +27,7 @@ steps:
       objectTemplatePath: "naked-pod.yaml"
       templateFillMap:
         testRound: r{{$.roundNumber}}
-- name: Test - wait for all pods from round {{$.roundNumber}} to start running # otherwise we'll just delete them in the next round before they have even started running, but we'd rather exercise the full pod lifecycle
+- name: Wait for all pods from round {{$.roundNumber}} to start running # otherwise we'll just delete them in the next round before they have even started running, but we'd rather exercise the full pod lifecycle
   measurements:
   - Identifier: WaitForRunningPods  # unlike WaitForControlledPods, this does not seem to require separate setup and gather phases
     Method: WaitForRunningPods

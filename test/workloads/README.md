@@ -11,7 +11,7 @@ Look at the CL2 vars used in each test to know which ones to set for other tests
 
 Bash:
 ```
-CL2_PODS_PER_NODE=12 CL2_TARGET_POD_CHURN=20 ~/go/src/github.com/kubernetes/perf-tests/clusterloader2/clusterloader2 --testconfig=~/go/src/github.com/Azure/knarly/test/workloads/pod-churn/config.yaml --provider=aks --kubeconfig=$HOME/.kube/config --v=2 --enable-exec-service=false --delete-automanaged-namespaces
+CL2_PODS_PER_NODE=12 CL2_TARGET_POD_CHURN=20 ~/go/src/github.com/kubernetes/perf-tests/clusterloader2/clusterloader2 --testconfig=./test/workloads/pod-churn/config.yaml --provider=aks --kubeconfig=$HOME/.kube/config --v=2 --enable-exec-service=false --delete-automanaged-namespaces
 ```
 
 

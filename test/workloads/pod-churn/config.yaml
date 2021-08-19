@@ -15,7 +15,7 @@ name: pod-churn
 
 # computed params
 {{$desiredConcurrentPods := MultiplyInt .Nodes $ACTIVE_PODS_PER_NODE}}  #Total number of active pods for cluster
-{{$targetPodCreationsPerSecond := DivideInt $TARGET_POD_CHURN 4 }}  # The divisor here has been chosen by experimentation.  It allows for the create, the delete, and some patch operations that happen, and build the total pod churn (create, update, delete) up to approx the target
+{{$targetPodCreationsPerSecond := DivideInt $TARGET_POD_CHURN 6 }}  # The divisor here has been chosen by experimentation.  It allows for the create, the delete, and some patch operations that happen, and build the total pod churn (create, update, delete) up to approx the target
 
 
 namespace:
@@ -28,9 +28,6 @@ tuningSets:
 - name: TargetDeleteQps
   qpsLoad:
     qps: {{$targetPodCreationsPerSecond}} # has same numerical value as create, but is separate tuning set so neither can starve the other
-- name: Fast
-  qpsLoad:
-    qps: 4000    
 
 steps:
 
@@ -43,30 +40,6 @@ steps:
     Params:
       action: start
       duration: 1ms
-
-### Prepare, by starting up the desired number of concurrent pods. Let it stablize with all these running, before we start churning them.
-#   This also has the effect on getting the container image onto all the nodes, so in the later stages, when we are measuring stuff,
-#   image pull times will not be an issue
-- name: Prepare - deploy initial pod set
-  phases:
-  - namespaceRange:
-      min: 1
-      max: 1
-    replicasPerNamespace: {{$desiredConcurrentPods}}
-    tuningSet: Fast  # no point in slowing this down, since we haven't even started the real part of the test yet  (this is the only difference between this and the module we use below)
-    objectBundle:
-    - basename: pods-set-0-instance  # naming is important because its how we delete them later (instance number suffix will be automatically added)
-      objectTemplatePath: "naked-pod.yaml"
-      templateFillMap:
-        testRound: r0
-- name: Prepare - wait until initial set of pods are running  
-  measurements:
-  - Identifier: WaitForRunningPods  # unlike WaitForControlledPods, this does not seem to require separate setup and gather phases
-    Method: WaitForRunningPods
-    Params:
-      desiredPodCount: {{$desiredConcurrentPods}}
-      labelSelector: test-round = r0
-      timeout: 10m
 
 ### Initialize measurements
 - name: Initialize measurements
@@ -87,24 +60,25 @@ steps:
       action: start
 
 
-### Test, in multiple rounds of "churn creation". Each round concurrently shuts down one set of pods and creates another.
-#   We use multiple rounds so that we have a decent time period to measure, even in cases where churn rate (and therefore pod lifetimes)
-#   is low.
+### Test, in multiple rounds of "churn creation"
 - module:
     path: /churn-module.yaml
     params:
       replicas: {{$desiredConcurrentPods}}
-      roundNumber: 1
+      roundNumber: 1  # this round has nothing to delete
+      desc: Prepare initial set of pods
 - module:
     path: /churn-module.yaml
     params:
       replicas: {{$desiredConcurrentPods}}
-      roundNumber: 2
+      roundNumber: 2  # this round does the real work
+      desc: Do the churn test
 - module:
     path: /churn-module.yaml
     params:
-      replicas: 0   # zero replicas in the new round. Force deletion under our control (for faster cleanup than the default auto cleanup)
+      replicas: 0   # this just cleans up, with zero replicas in the new round. Force deletion under our control (for faster cleanup than the default auto cleanup)
       roundNumber: 3
+      desc: Cleanup remaining pods
 
 ### Gather measurements
 - name: Gather measurements
@@ -126,11 +100,3 @@ steps:
     Method: SchedulingThroughput
     Params:
       action: gather   
-
-- name: Pause before auto namespace cleanup # we've already deleted everything in it, but somehow K8s still seems to take ages (e.g 10+ mins in some cases) to delete the namespace. Lets try a little pause, to let things quiet down before we end the test
-  measurements:
-  - Identifier: Dummy
-    Method: Sleep
-    Params:
-      action: start
-      duration: 1m 
