@@ -12,10 +12,14 @@ name: pod-churn
 # input params (which by default come from )
 {{$ACTIVE_PODS_PER_NODE := DefaultParam .CL2_PODS_PER_NODE 60}}
 {{$TARGET_POD_CHURN := DefaultParam .CL2_TARGET_POD_CHURN 10}}  # i.e. target pod churn, in mutations/sec, for cluster as a whole. (create+update+delete operations per second)
+{{$POD_START_TIMEOUT_MINS := DefaultParam .CL2_POD_START_TIMEOUT_MINS 5}}  # how long to wait, at end of a phase, for its pods to start up
+
 
 # computed params
 {{$desiredConcurrentPods := MultiplyInt .Nodes $ACTIVE_PODS_PER_NODE}}  #Total number of active pods for cluster
 {{$targetPodCreationsPerSecond := DivideInt $TARGET_POD_CHURN 6 }}  # The divisor here has been chosen by experimentation.  It allows for the create, the delete, and some patch operations that happen, and build the total pod churn (create, update, delete) up to approx the target
+{{$expectedSecondsInChurnPhase := DivideInt $desiredConcurrentPods $targetPodCreationsPerSecond}}
+{{$podStartTimeout := print $POD_START_TIMEOUT_MINS "m"}}
 
 
 namespace:
@@ -33,7 +37,7 @@ steps:
 
 #### Log params ###
 # Can't find a log action, but the above name should function like a log, to let us see the computeed sleep seconds
-- name: Log - pod creations {{$targetPodCreationsPerSecond}}/s, concurrent pods {{$desiredConcurrentPods}}
+- name: Log - pod creations {{$targetPodCreationsPerSecond}}/s, concurrent pods {{$desiredConcurrentPods}}, expected seconds in churn phase {{$expectedSecondsInChurnPhase}}, pod start timeout {{$podStartTimeout}}
   measurements:
   - Identifier: Dummy
     Method: Sleep
@@ -58,7 +62,11 @@ steps:
     Method: SchedulingThroughput
     Params:
       action: start
-
+  - Identifier: Timer
+    Method: Timer
+    Params:
+       action: start
+       label: overall duration  # can't just "declare" a timer, without starting it.
 
 ### Test, in multiple rounds of "churn creation"
 - module:
@@ -67,22 +75,29 @@ steps:
       replicas: {{$desiredConcurrentPods}}
       roundNumber: 1  # this round has nothing to delete
       desc: Prepare initial set of pods
+      timeout: {{$podStartTimeout}}
 - module:
     path: /churn-module.yaml
     params:
       replicas: {{$desiredConcurrentPods}}
       roundNumber: 2  # this round does the real work
       desc: Do the churn test
+      timeout: {{$podStartTimeout}}
 - module:
     path: /churn-module.yaml
     params:
       replicas: 0   # this just cleans up, with zero replicas in the new round. Force deletion under our control (for faster cleanup than the default auto cleanup)
       roundNumber: 3
       desc: Cleanup remaining pods
+      timeout: {{$podStartTimeout}}
 
 ### Gather measurements
 - name: Gather measurements
   measurements:
+  - Identifier: Timer
+    Method: Timer
+    Params:
+      action: gather
  # not supported on AKS by the looks (ask Ace, he knows about it, I see from Git commit history) 
  # - Identifier: SchedulingMetrics
  #   Method: SchedulingMetrics

@@ -5,9 +5,18 @@
 # to have a different 'base name' from the things we are creating.
 
 {{$previousRoundNum := SubtractInt .roundNumber 1}}
+{{$fullRoundName := print $.desc " (rnd " $.roundNumber ")"}}
 
 steps:
-- name: {{$.desc}} (rnd {{$.roundNumber}})
+- name: begin CRUD timer 
+  measurements:
+  - Identifier: Timer # (reference to timer named "Timer" in containing file)
+    Method: Timer
+    Params:
+      action: start
+      label: CRUD for {{$fullRoundName}}
+
+- name: {{$fullRoundName}}
   phases:  # phases run concurrently if they are within the same step
   - namespaceRange:
       min: 1
@@ -27,6 +36,22 @@ steps:
       objectTemplatePath: "naked-pod.yaml"
       templateFillMap:
         testRound: r{{$.roundNumber}}
+
+- name: end CRUD timer
+  measurements:
+  - Identifier: Timer # (ref to object in containing file)        
+    Method: Timer
+    Params:
+      action: stop
+      label: CRUD for {{$fullRoundName}}
+- name: begin wait timer
+  measurements:
+  - Identifier: Timer
+    Method: Timer
+    Params:
+      action: start
+      label: wait for pods {{$fullRoundName}}
+
 - name: Wait for all pods from round {{$.roundNumber}} to start running # otherwise we'll just delete them in the next round before they have even started running, but we'd rather exercise the full pod lifecycle
   measurements:
   - Identifier: WaitForRunningPods  # unlike WaitForControlledPods, this does not seem to require separate setup and gather phases
@@ -34,4 +59,12 @@ steps:
     Params:
       desiredPodCount: {{$.replicas}} 
       labelSelector: test-round = r{{$.roundNumber}}
-      timeout: 10m # we don't ever really want it to hit the timeout
+      timeout: {{$.timeout}}
+
+- name: end wait timer
+  measurements:
+  - Identifier: Timer
+    Method: Timer
+    Params:
+      action: stop
+      label: wait for pods {{$fullRoundName}}
