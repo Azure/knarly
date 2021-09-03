@@ -9,7 +9,7 @@ name: pod-churn
 # (a) reduce TARGET_POD_CHURN low enough that the pods just start up at the rate they are being created OR
 # (b) tweak the controller throttling/settings in your cluster so that pods can be started up more quickly.
 
-# input params (which by default come from )
+# input params (which be default come from override file or CL2... env vars)
 {{$ACTIVE_PODS_PER_NODE := DefaultParam .CL2_PODS_PER_NODE 60}}
 {{$TARGET_POD_CHURN := DefaultParam .CL2_TARGET_POD_CHURN 10}}  # i.e. target pod churn, in mutations/sec, for cluster as a whole. (create+update+delete operations per second)
 {{$POD_START_TIMEOUT_MINS := DefaultParam .CL2_POD_START_TIMEOUT_MINS 5}}  # how long to wait, at end of a phase, for its pods to start up
