@@ -1,0 +1,11 @@
+# need to use naked pods because in CL2 deletion works off basename+index so can't delete pods created by a deployment
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{.Name}}
+  labels:
+    test-round: {{$.testRound}} # used to wait after we create each set of them
+spec:    
+  containers:
+  - name: load-test
+    image: k8s.gcr.io/pause:3.1

@@ -1,0 +1,94 @@
+name: deployment-churn
+
+# This test works like the pod-churn one, but it groups the pods together into deployments.
+# Note that, for high values of PODS_PER_DEPLOYMENT its interaction with the API server will get 
+# quite chunky. E.g. if it makes a deployment with 1000 pods, that's just one operation, and this test
+# does not control or define the rate at which those pods get created. (I.e. this test only controls the rate
+# at which _deployments_ are created.)
+
+# input params (which be default come from override file or CL2... env vars)
+{{$ACTIVE_PODS_PER_NODE := DefaultParam .CL2_PODS_PER_NODE 60}}
+{{$PODS_PER_DEPLOYMENT := DefaultParam .CL2_PODS_PER_DEPLOYMENT 100}}
+{{$TARGET_POD_CHURN := DefaultParam .CL2_TARGET_POD_CHURN 10}}  # i.e. target pod churn, in mutations/sec, for cluster as a whole. (create+update+delete operations per second)
+{{$POD_START_TIMEOUT_MINS := DefaultParam .CL2_POD_START_TIMEOUT_MINS 5}}  # how long to wait, at end of a phase, for its pods to start up
+
+
+# computed params
+{{$desiredConcurrentPods := MultiplyInt .Nodes $ACTIVE_PODS_PER_NODE}}  #Total number of active pods for cluster
+{{$targetPodCreationsPerSecond := DivideInt $TARGET_POD_CHURN 6 }}  # The divisor here has been chosen by experimentation.  It allows for the create, the delete, and some patch operations that happen, and build the total pod churn (create, update, delete) up to approx the target
+{{$targetDeploymentCreationsPerSecond := DivideFloat $targetPodCreationsPerSecond $PODS_PER_DEPLOYMENT}}
+{{$desiredConcurrentDeployments := MaxInt 1 (DivideInt $desiredConcurrentPods $PODS_PER_DEPLOYMENT)}}
+{{$expectedConcurrentPods := MultiplyInt $desiredConcurrentDeployments $PODS_PER_DEPLOYMENT}}  # might be different from $desirnedConcurrentPods due to rounding etc
+{{$expectedSecondsInChurnPhase := DivideInt $desiredConcurrentPods $targetPodCreationsPerSecond}}
+{{$podStartTimeout := print $POD_START_TIMEOUT_MINS "m"}}
+
+
+namespace:
+  number: 1  # testing everything in one namespace
+
+tuningSets:
+- name: TargetCreateQps
+  qpsLoad:
+    qps: {{$targetDeploymentCreationsPerSecond}}
+- name: TargetDeleteQps
+  qpsLoad:
+    qps: {{$targetDeploymentCreationsPerSecond}} # has same numerical value as create, but is separate tuning set so neither can starve the other
+
+steps:
+
+#### Log params ###
+# Can't find a log action, but the above name should function like a log, to let us see the computeed sleep seconds
+- name: Log - deployment creations {{$targetDeploymentCreationsPerSecond}}/s, , concurrent deployments {{$desiredConcurrentDeployments}}, pods per deployment {{$PODS_PER_DEPLOYMENT}}, expected seconds in churn phase {{$expectedSecondsInChurnPhase}}, pod start timeout {{$podStartTimeout}}
+  measurements:
+  - Identifier: Dummy
+    Method: Sleep
+    Params:
+      action: start
+      duration: 1ms
+
+### Initialize measurements
+- name: Initialize measurements
+  measurements:
+  - Identifier: Timer
+    Method: Timer
+    Params:
+       action: start
+       label: overall duration  # can't just "declare" a timer, without starting it.
+
+### Test, in multiple rounds of "churn creation"
+- module:
+    path: /churn-module.yaml
+    params:
+      roundNumber: 1  # this round has nothing to delete
+      desc: Prepare initial set of deployments
+      replicas: {{$desiredConcurrentDeployments}}
+      podsPerDeployment: {{$PODS_PER_DEPLOYMENT}}
+      totalPods: {{$expectedConcurrentPods}}
+      timeout: {{$podStartTimeout}}
+- module:
+    path: /churn-module.yaml
+    params:
+      roundNumber: 2  # this round does the real work
+      desc: Do the churn test
+      replicas: {{$desiredConcurrentDeployments}}
+      podsPerDeployment: {{$PODS_PER_DEPLOYMENT}}
+      totalPods: {{$expectedConcurrentPods}}
+      timeout: {{$podStartTimeout}}
+- module:
+    path: /churn-module.yaml
+    params:
+      roundNumber: 3
+      desc: Cleanup remaining deployments
+      replicas: 0   # this just cleans up, with zero replicas in the new round. Force deletion under our control (for faster cleanup than the default auto cleanup)
+      podsPerDeployment: {{$PODS_PER_DEPLOYMENT}}
+      totalPods: 0  # this is cleanup
+      timeout: {{$podStartTimeout}}
+
+### Gather measurements
+- name: Gather measurements
+  measurements:
+  - Identifier: Timer
+    Method: Timer
+    Params:
+      action: gather
+  

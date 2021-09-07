@@ -1,0 +1,117 @@
+name: pod-churn
+
+# This pod churn test can be set to target a particular level of churn (e.g. 50 pod operations per second) with the TARGET_POD_CHURN 
+# parameter.  But if you just want it to go has fast as it can, set that to something high (e.g. a few thousand)
+#
+# Note that, after each round of "churn" - i.e. each time it shuts down existing pods and tells new ones to start, the test waits until the 
+# new ones are actually running. So you'll see burst of create/delete, then pauses while the created ones start. Therefore, to get something
+# approximating continuous churn at a steady rate, you would need to either
+# (a) reduce TARGET_POD_CHURN low enough that the pods just start up at the rate they are being created OR
+# (b) tweak the controller throttling/settings in your cluster so that pods can be started up more quickly.
+
+# input params (which be default come from override file or CL2... env vars)
+{{$ACTIVE_PODS_PER_NODE := DefaultParam .CL2_PODS_PER_NODE 60}}
+{{$TARGET_POD_CHURN := DefaultParam .CL2_TARGET_POD_CHURN 10}}  # i.e. target pod churn, in mutations/sec, for cluster as a whole. (create+update+delete operations per second)
+{{$POD_START_TIMEOUT_MINS := DefaultParam .CL2_POD_START_TIMEOUT_MINS 5}}  # how long to wait, at end of a phase, for its pods to start up
+
+
+# computed params
+{{$desiredConcurrentPods := MultiplyInt .Nodes $ACTIVE_PODS_PER_NODE}}  #Total number of active pods for cluster
+{{$targetPodCreationsPerSecond := DivideInt $TARGET_POD_CHURN 6 }}  # The divisor here has been chosen by experimentation.  It allows for the create, the delete, and some patch operations that happen, and build the total pod churn (create, update, delete) up to approx the target
+{{$expectedSecondsInChurnPhase := DivideInt $desiredConcurrentPods $targetPodCreationsPerSecond}}
+{{$podStartTimeout := print $POD_START_TIMEOUT_MINS "m"}}
+
+
+namespace:
+  number: 1  # testing everything in one namespace
+
+tuningSets:
+- name: TargetCreateQps
+  qpsLoad:
+    qps: {{$targetPodCreationsPerSecond}}
+- name: TargetDeleteQps
+  qpsLoad:
+    qps: {{$targetPodCreationsPerSecond}} # has same numerical value as create, but is separate tuning set so neither can starve the other
+
+steps:
+
+#### Log params ###
+# Can't find a log action, but the above name should function like a log, to let us see the computeed sleep seconds
+- name: Log - pod creations {{$targetPodCreationsPerSecond}}/s, concurrent pods {{$desiredConcurrentPods}}, expected seconds in churn phase {{$expectedSecondsInChurnPhase}}, pod start timeout {{$podStartTimeout}}
+  measurements:
+  - Identifier: Dummy
+    Method: Sleep
+    Params:
+      action: start
+      duration: 1ms
+
+### Initialize measurements
+- name: Initialize measurements
+  measurements:
+  # See comment in Gather section below
+  #- Identifier: SchedulingMetrics
+  #  Method: SchedulingMetrics
+  #  Params:
+  #    action: start  
+  #- Identifier: MetricsForE2E  
+  #  Method: MetricsForE2E
+  #  Params:
+  #    action: start
+  #    gatherKubeletsMetrics: false 
+  - Identifier: SchedulingThroughput
+    Method: SchedulingThroughput
+    Params:
+      action: start
+  - Identifier: Timer
+    Method: Timer
+    Params:
+       action: start
+       label: overall duration  # can't just "declare" a timer, without starting it.
+
+### Test, in multiple rounds of "churn creation"
+- module:
+    path: /churn-module.yaml
+    params:
+      replicas: {{$desiredConcurrentPods}}
+      roundNumber: 1  # this round has nothing to delete
+      desc: Prepare initial set of pods
+      timeout: {{$podStartTimeout}}
+- module:
+    path: /churn-module.yaml
+    params:
+      replicas: {{$desiredConcurrentPods}}
+      roundNumber: 2  # this round does the real work
+      desc: Do the churn test
+      timeout: {{$podStartTimeout}}
+- module:
+    path: /churn-module.yaml
+    params:
+      replicas: 0   # this just cleans up, with zero replicas in the new round. Force deletion under our control (for faster cleanup than the default auto cleanup)
+      roundNumber: 3
+      desc: Cleanup remaining pods
+      timeout: {{$podStartTimeout}}
+
+### Gather measurements
+- name: Gather measurements
+  measurements:
+  - Identifier: Timer
+    Method: Timer
+    Params:
+      action: gather
+ # not supported on AKS by the looks (ask Ace, he knows about it, I see from Git commit history) 
+ # - Identifier: SchedulingMetrics
+ #   Method: SchedulingMetrics
+ #   Params:
+ #     action: gather
+ #
+ # Doesn't work well on AKS by the looks. Maybe if I can "register" the API server with CL2 it will work better (complains of it being )
+ # unregistered.
+ # - Identifier: MetricsForE2E
+ #   Method: MetricsForE2E
+ #   Params:
+ #     action: gather   
+ #
+  - Identifier: SchedulingThroughput
+    Method: SchedulingThroughput
+    Params:
+      action: gather   
