@@ -11,6 +11,7 @@ name: deployment-churn
 {{$PODS_PER_DEPLOYMENT := DefaultParam .CL2_PODS_PER_DEPLOYMENT 100}}
 {{$TARGET_POD_CHURN := DefaultParam .CL2_TARGET_POD_CHURN 10}}  # i.e. target pod churn, in mutations/sec, for cluster as a whole. (create+update+delete operations per second)
 {{$POD_START_TIMEOUT_MINS := DefaultParam .CL2_POD_START_TIMEOUT_MINS 5}}  # how long to wait, at end of a phase, for its pods to start up
+{{$CHURN_PHASE_DIVISOR := DefaultParam .CL2_CHURN_PHASE_DIVISOR 2}}
 
 
 # computed params
@@ -19,7 +20,13 @@ name: deployment-churn
 {{$targetDeploymentCreationsPerSecond := DivideFloat $targetPodCreationsPerSecond $PODS_PER_DEPLOYMENT}}
 {{$desiredConcurrentDeployments := MaxInt 1 (DivideInt $desiredConcurrentPods $PODS_PER_DEPLOYMENT)}}
 {{$expectedConcurrentPods := MultiplyInt $desiredConcurrentDeployments $PODS_PER_DEPLOYMENT}}  # might be different from $desirnedConcurrentPods due to rounding etc
-{{$expectedSecondsInChurnPhase := DivideInt $desiredConcurrentPods $targetPodCreationsPerSecond}}
+
+# Shorten the churn phase, by doing only part of it 
+{{$deploymentsToKeep := DivideInt $desiredConcurrentDeployments $CHURN_PHASE_DIVISOR}} # keep this many from round 1, running throughpout round 2
+{{$deploymentsToRecreate := SubtractInt $desiredConcurrentDeployments $deploymentsToKeep}}  # re-create this many
+{{$expectedSecondsInStartupPhase := DivideInt $desiredConcurrentDeployments $targetDeploymentCreationsPerSecond}}  # expected duration of round 1
+{{$expectedSecondsInChurnPhase := DivideInt $deploymentsToRecreate $targetDeploymentCreationsPerSecond}}  # expected duration of round 2
+
 {{$podStartTimeout := print $POD_START_TIMEOUT_MINS "m"}}
 
 
@@ -38,7 +45,7 @@ steps:
 
 #### Log params ###
 # Can't find a log action, but the above name should function like a log, to let us see the computeed sleep seconds
-- name: Log - deployment creations {{$targetDeploymentCreationsPerSecond}}/s, , concurrent deployments {{$desiredConcurrentDeployments}}, pods per deployment {{$PODS_PER_DEPLOYMENT}}, expected seconds in churn phase {{$expectedSecondsInChurnPhase}}, pod start timeout {{$podStartTimeout}}
+- name: Log - deployment creations {{$targetDeploymentCreationsPerSecond}}/s, , concurrent deployments {{$desiredConcurrentDeployments}}, pods per deployment {{$PODS_PER_DEPLOYMENT}}, deployments to churn {{$deploymentsToRecreate}}, expected seconds in startup/churn phases {{$expectedSecondsInStartupPhase}}/{{$expectedSecondsInChurnPhase}}, pod start timeout {{$podStartTimeout}}
   measurements:
   - Identifier: Dummy
     Method: Sleep
@@ -61,7 +68,8 @@ steps:
     params:
       roundNumber: 1  # this round has nothing to delete
       desc: Prepare initial set of deployments
-      replicas: {{$desiredConcurrentDeployments}}
+      oldReplicasAfterDeletion: 0
+      newReplicas: {{$desiredConcurrentDeployments}}
       podsPerDeployment: {{$PODS_PER_DEPLOYMENT}}
       totalPods: {{$expectedConcurrentPods}}
       timeout: {{$podStartTimeout}}
@@ -70,19 +78,20 @@ steps:
     params:
       roundNumber: 2  # this round does the real work
       desc: Do the churn test
-      replicas: {{$desiredConcurrentDeployments}}
+      oldReplicasAfterDeletion: {{$deploymentsToKeep}}  # delete all the old ones EXCEPT this many
+      newReplicas: {{$deploymentsToRecreate}}           # and create this many new ones
       podsPerDeployment: {{$PODS_PER_DEPLOYMENT}}
       totalPods: {{$expectedConcurrentPods}}
       timeout: {{$podStartTimeout}}
-- module:
-    path: /churn-module.yaml
-    params:
-      roundNumber: 3
-      desc: Cleanup remaining deployments
-      replicas: 0   # this just cleans up, with zero replicas in the new round. Force deletion under our control (for faster cleanup than the default auto cleanup)
-      podsPerDeployment: {{$PODS_PER_DEPLOYMENT}}
-      totalPods: 0  # this is cleanup
-      timeout: {{$podStartTimeout}}
+#- module:
+#    path: /churn-module.yaml
+#    params:
+#      roundNumber: 3
+#      desc: Cleanup remaining deployments
+#      replicas: 0   # this just cleans up, with zero replicas in the new round. Force deletion under our control (for faster cleanup than the default auto cleanup)
+#      podsPerDeployment: {{$PODS_PER_DEPLOYMENT}}
+#      totalPods: 0  # this is cleanup
+#      timeout: {{$podStartTimeout}}
 
 ### Gather measurements
 - name: Gather measurements
