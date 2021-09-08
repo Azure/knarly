@@ -29,6 +29,9 @@ name: pod-churn
 
 namespace:
   number: 1  # testing everything in one namespace
+  deleteStaleNamespaces: true # delete any old ones from previous failed CL2 runs (We seem to need this, because stuff got pick up from other test namespaces, WaitForRunningPods. Don't know why! It shouldn't work like that.)
+  deleteAutomanagedNamespaces: true # delete at end of test
+  enableExistingNamespaces: false # only use the automanged ones that CL2 creates for us
 
 tuningSets:
 - name: TargetCreateQps
