@@ -1,4 +1,4 @@
-name: pod-churn
+name: naked-pod-churn
 
 # Churn test with naked pods
 # Deprecated. Use the deployment-churn test, because it 
