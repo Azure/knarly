@@ -83,13 +83,13 @@ steps:
       roundNumber: 2  # this round does the real work
       desc: Do the churn test
       timeout: {{$podStartTimeout}}
-#- module:
-#    path: /churn-module.yaml
-#    params:
-#      replicas: 0   # this just cleans up, with zero replicas in the new round. Force deletion under our control (for faster cleanup than the default auto cleanup)
-#      roundNumber: 3
-#      desc: Cleanup remaining pods
-#      timeout: {{$podStartTimeout}}
+- module:
+    path: /churn-module.yaml
+    params:
+      replicas: 0   # this just cleans up, with zero replicas in the new round. Force deletion under our control (for faster cleanup than the default auto cleanup)
+      roundNumber: 3
+      desc: Cleanup remaining pods
+      timeout: {{$podStartTimeout}}
 
 ### Gather measurements
 - name: Gather measurements
