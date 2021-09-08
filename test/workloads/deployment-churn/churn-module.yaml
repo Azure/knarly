@@ -21,7 +21,7 @@ steps:
   - namespaceRange:
       min: 1
       max: 1
-    replicasPerNamespace: 0
+    replicasPerNamespace: {{$.oldReplicasAfterDeletion}}
     tuningSet: TargetDeleteQps  # (reference to tuning set from containing file)
     objectBundle:
     - basename: deployment-rnd-{{$previousRoundNum}}-instance  # delete the previous set
@@ -29,7 +29,7 @@ steps:
   - namespaceRange:
       min: 1
       max: 1
-    replicasPerNamespace: {{$.replicas}} 
+    replicasPerNamespace: {{$.newReplicas}} 
     tuningSet: TargetCreateQps # (reference to tuning set from containing file)
     objectBundle:
     - basename: deployment-rnd-{{$.roundNumber}}-instance  # create the new set
@@ -59,8 +59,11 @@ steps:
     Method: WaitForRunningPods
     Params:
       desiredPodCount: {{$.totalPods}} 
-      labelSelector: test-round = r{{$.roundNumber}}
+      labelSelector: test-pod = deployment-churn  # match all our pods, regardless of the round, since we sometimes only do partial churn (i.e. leave ones from older rounds)
       timeout: {{$.timeout}}
+      # TODO: why did the label selector seem to pick up pods from other CL2 namespaces? Is that normal? Can it be avoided?
+      # For now, we are avoiding it by configuring teh test to delete stale test namespaces when it starts, so there won't be 
+      # any such unwanted pods.
 
 - name: end wait timer
   measurements:

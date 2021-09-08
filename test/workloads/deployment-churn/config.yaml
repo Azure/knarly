@@ -1,5 +1,5 @@
 name: deployment-churn
-
+# Churn test with deployments
 # This test works like the pod-churn one, but it groups the pods together into deployments.
 # Note that, for high values of PODS_PER_DEPLOYMENT its interaction with the API server will get 
 # quite chunky. E.g. if it makes a deployment with 1000 pods, that's just one operation, and this test
@@ -11,20 +11,40 @@ name: deployment-churn
 {{$PODS_PER_DEPLOYMENT := DefaultParam .CL2_PODS_PER_DEPLOYMENT 100}}
 {{$TARGET_POD_CHURN := DefaultParam .CL2_TARGET_POD_CHURN 10}}  # i.e. target pod churn, in mutations/sec, for cluster as a whole. (create+update+delete operations per second)
 {{$POD_START_TIMEOUT_MINS := DefaultParam .CL2_POD_START_TIMEOUT_MINS 5}}  # how long to wait, at end of a phase, for its pods to start up
+{{$CHURN_FRACTION := DefaultParam .CL2_CHURN_FRACTION 0.3}}
+{{$CLEANUP := DefaultParam .CL2_CLEANUP 1}}  # See comments below on optional cleanup. Should we cleanup our own pods?  1 = yes. All other values = let them be cleaned up in the auto namespace deletion
 
 
 # computed params
 {{$desiredConcurrentPods := MultiplyInt .Nodes $ACTIVE_PODS_PER_NODE}}  #Total number of active pods for cluster
 {{$targetPodCreationsPerSecond := DivideInt $TARGET_POD_CHURN 6 }}  # The divisor here has been chosen by experimentation.  It allows for the create, the delete, and some patch operations that happen, and build the total pod churn (create, update, delete) up to approx the target
 {{$targetDeploymentCreationsPerSecond := DivideFloat $targetPodCreationsPerSecond $PODS_PER_DEPLOYMENT}}
-{{$desiredConcurrentDeployments := MaxInt 1 (DivideInt $desiredConcurrentPods $PODS_PER_DEPLOYMENT)}}
+{{$desiredConcurrentDeployments := MaxInt 1 (DivideInt $desiredConcurrentPods $PODS_PER_DEPLOYMENT)}}  # must have at least 1 deplyoment
 {{$expectedConcurrentPods := MultiplyInt $desiredConcurrentDeployments $PODS_PER_DEPLOYMENT}}  # might be different from $desirnedConcurrentPods due to rounding etc
-{{$expectedSecondsInChurnPhase := DivideInt $desiredConcurrentPods $targetPodCreationsPerSecond}}
+
+# Shorten the churn phase, by doing only part of it. We churn (i.e. delete and replace) $CHURN_FRACTION of the deployments
+{{$deploymentsToRecreate := MultiplyInt $desiredConcurrentDeployments $CHURN_FRACTION}}  # re-create this many
+{{$deploymentsToKeep := SubtractInt $desiredConcurrentDeployments $deploymentsToRecreate}} # keep this many from round 1, running throughpout round 2
+{{$expectedSecondsInStartupPhase := DivideInt $desiredConcurrentDeployments $targetDeploymentCreationsPerSecond}}  # expected duration of round 1
+{{$expectedSecondsInChurnPhase := DivideInt $deploymentsToRecreate $targetDeploymentCreationsPerSecond}}  # expected duration of round 2
+
+# Configure optional cleanup
+# By default we do clean them up explicitly, because by default letting them just get deleted with the namespace is slow.
+# However, if delete-collection-workers has been set to a highish value (e.g. 250) in the API server params, then 
+# there is no need for us to delete them explicitly. They'l be deleted quickly when this test deletes its namespace.
+# So, if you have set that parameter in your API server, then set the CL2_CLEANUP parameter to 0
+{{$cleanupPhaseDesc := IfThenElse (eq $CLEANUP 1) "Cleanup" "No-op (skipped cleanup)"}}
+{{$cleanupPhaseRoundNumber := IfThenElse (eq $CLEANUP 1) 3 99}} # if we don't want cleanup, just move this round 99, so it will be a no-op when it tries to cleanup the non-existent round 98
+{{$cleanupPhaseExpectedConcurrentPods := IfThenElse (eq $CLEANUP 1) 0 $expectedConcurrentPods}}  # if we don't want cleanup, expected number is just the full complement of pods
+
 {{$podStartTimeout := print $POD_START_TIMEOUT_MINS "m"}}
 
 
 namespace:
   number: 1  # testing everything in one namespace
+  deleteStaleNamespaces: true # delete any old ones from previous failed CL2 runs (We seem to need this, because stuff got pick up from other test namespaces, WaitForRunningPods. Don't know why! It shouldn't work like that.)
+  deleteAutomanagedNamespaces: true # delete at end of test
+  enableExistingNamespaces: false # only use the automanged ones that CL2 creates for us
 
 tuningSets:
 - name: TargetCreateQps
@@ -38,7 +58,7 @@ steps:
 
 #### Log params ###
 # Can't find a log action, but the above name should function like a log, to let us see the computeed sleep seconds
-- name: Log - deployment creations {{$targetDeploymentCreationsPerSecond}}/s, , concurrent deployments {{$desiredConcurrentDeployments}}, pods per deployment {{$PODS_PER_DEPLOYMENT}}, expected seconds in churn phase {{$expectedSecondsInChurnPhase}}, pod start timeout {{$podStartTimeout}}
+- name: Log - deployment creations {{$targetDeploymentCreationsPerSecond}}/s, , pods per deployment {{$PODS_PER_DEPLOYMENT}}, deployments to create/churn {{$desiredConcurrentDeployments}}/{{$deploymentsToRecreate}}, expected seconds in startup/churn phases {{$expectedSecondsInStartupPhase}}/{{$expectedSecondsInChurnPhase}}, pod start timeout {{$podStartTimeout}}
   measurements:
   - Identifier: Dummy
     Method: Sleep
@@ -59,9 +79,10 @@ steps:
 - module:
     path: /churn-module.yaml
     params:
-      roundNumber: 1  # this round has nothing to delete
+      roundNumber: 1  # this is a setup round. It has nothing to delete
       desc: Prepare initial set of deployments
-      replicas: {{$desiredConcurrentDeployments}}
+      oldReplicasAfterDeletion: 0
+      newReplicas: {{$desiredConcurrentDeployments}}
       podsPerDeployment: {{$PODS_PER_DEPLOYMENT}}
       totalPods: {{$expectedConcurrentPods}}
       timeout: {{$podStartTimeout}}
@@ -70,18 +91,20 @@ steps:
     params:
       roundNumber: 2  # this round does the real work
       desc: Do the churn test
-      replicas: {{$desiredConcurrentDeployments}}
+      oldReplicasAfterDeletion: {{$deploymentsToKeep}}  # delete all the old ones EXCEPT this many
+      newReplicas: {{$deploymentsToRecreate}}           # and create this many new ones
       podsPerDeployment: {{$PODS_PER_DEPLOYMENT}}
       totalPods: {{$expectedConcurrentPods}}
       timeout: {{$podStartTimeout}}
 - module:
     path: /churn-module.yaml
     params:
-      roundNumber: 3
-      desc: Cleanup remaining deployments
-      replicas: 0   # this just cleans up, with zero replicas in the new round. Force deletion under our control (for faster cleanup than the default auto cleanup)
+      roundNumber: {{$cleanupPhaseRoundNumber}} # this is the optional cleanup round (we make it "optional" by setting its round number to something really high, so it has nothing to cleanup from the immediately previous round, beceause there is no such round)
+      desc: {{$cleanupPhaseDesc}}
+      oldReplicasAfterDeletion: 0
+      newReplicas: 0          
       podsPerDeployment: {{$PODS_PER_DEPLOYMENT}}
-      totalPods: 0  # this is cleanup
+      totalPods: {{$cleanupPhaseExpectedConcurrentPods}}            # will be zero iff cleanup has been requested
       timeout: {{$podStartTimeout}}
 
 ### Gather measurements

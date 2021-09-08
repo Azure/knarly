@@ -1,4 +1,9 @@
-name: pod-churn
+name: naked-pod-churn
+
+# Churn test with naked pods
+# Deprecated. Use the deployment-churn test, because it 
+# (a) has more features: namely optional cleanup and "churn fraction" for shorter runtimes
+# (b) is more realistic in that most real usage of K8s involves deployments rather than naked pods
 
 # This pod churn test can be set to target a particular level of churn (e.g. 50 pod operations per second) with the TARGET_POD_CHURN 
 # parameter.  But if you just want it to go has fast as it can, set that to something high (e.g. a few thousand)
@@ -24,6 +29,9 @@ name: pod-churn
 
 namespace:
   number: 1  # testing everything in one namespace
+  deleteStaleNamespaces: true # delete any old ones from previous failed CL2 runs (We seem to need this, because stuff got pick up from other test namespaces, WaitForRunningPods. Don't know why! It shouldn't work like that.)
+  deleteAutomanagedNamespaces: true # delete at end of test
+  enableExistingNamespaces: false # only use the automanged ones that CL2 creates for us
 
 tuningSets:
 - name: TargetCreateQps
