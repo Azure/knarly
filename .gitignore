@@ -23,3 +23,7 @@ hack/bin
 _artifacts
 
 /test/e2e/config/azure-dev-envsubst.yaml
+cl2-metadata.json
+junit.xml
+generatedConfig_pod-churn.yaml
+generatedConfig_deployment-churn.yaml
