@@ -1,5 +1,5 @@
 name: deployment-churn
-
+# Churn test with deployments
 # This test works like the pod-churn one, but it groups the pods together into deployments.
 # Note that, for high values of PODS_PER_DEPLOYMENT its interaction with the API server will get 
 # quite chunky. E.g. if it makes a deployment with 1000 pods, that's just one operation, and this test

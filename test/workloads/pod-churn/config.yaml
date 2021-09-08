@@ -1,5 +1,10 @@
 name: pod-churn
 
+# Churn test with naked pods
+# Deprecated. Use the deployment-churn test, because it 
+# (a) has more features: namely optional cleanup and "churn fraction" for shorter runtimes
+# (b) is more realistic in that most real usage of K8s involves deployments rather than naked pods
+
 # This pod churn test can be set to target a particular level of churn (e.g. 50 pod operations per second) with the TARGET_POD_CHURN 
 # parameter.  But if you just want it to go has fast as it can, set that to something high (e.g. a few thousand)
 #
