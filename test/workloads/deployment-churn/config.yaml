@@ -12,7 +12,7 @@ name: deployment-churn
 {{$TARGET_POD_CHURN := DefaultParam .CL2_TARGET_POD_CHURN 10}}  # i.e. target pod churn, in mutations/sec, for cluster as a whole. (create+update+delete operations per second)
 {{$POD_START_TIMEOUT_MINS := DefaultParam .CL2_POD_START_TIMEOUT_MINS 5}}  # how long to wait, at end of a phase, for its pods to start up
 {{$CHURN_FRACTION := DefaultParam .CL2_CHURN_FRACTION 0.3}}
-{{$CLEANUP := DefaultParam .CL2_CLEANUP 1}}  # Should we cleanup our own pods?  1 = yes. All other values = let them be cleaned up in the auto namespace deletion
+{{$CLEANUP := DefaultParam .CL2_CLEANUP 1}}  # See comments below on optional cleanup. Should we cleanup our own pods?  1 = yes. All other values = let them be cleaned up in the auto namespace deletion
 
 
 # computed params
