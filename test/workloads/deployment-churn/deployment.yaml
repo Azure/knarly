@@ -15,7 +15,6 @@ spec:
       labels:
         app: {{.Name}}
         test-round: {{$.testRound}}
-        test-pod: deployment-churn
     spec:    
       containers:
       - name: load-test
