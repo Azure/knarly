@@ -27,3 +27,4 @@ cl2-metadata.json
 junit.xml
 generatedConfig_pod-churn.yaml
 generatedConfig_deployment-churn.yaml
+generatedConfig_naked-pod-churn.yaml
