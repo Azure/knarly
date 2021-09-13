@@ -107,6 +107,7 @@ steps:
       podsPerDeployment: {{$PODS_PER_DEPLOYMENT}}
       totalPods: 0
       timeout: {{$podStartTimeout}}
+      nsCount: {{$NS_COUNT}}
 {{end}}
 
 ### Gather measurements
