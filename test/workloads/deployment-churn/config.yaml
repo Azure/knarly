@@ -22,7 +22,7 @@ name: deployment-churn
 
 # computed params
 {{$desiredConcurrentPods := MultiplyInt .Nodes $ACTIVE_PODS_PER_NODE}}  #Total number of active pods for cluster
-{{$targetPodCreationsPerSecond := DivideInt $TARGET_POD_CHURN 6 }}  # The divisor here has been chosen by experimentation.  It allows for the create, the delete, and some patch operations that happen, and build the total pod churn (create, update, delete) up to approx the target
+{{$targetPodCreationsPerSecond := DivideInt $TARGET_POD_CHURN 2 }}  # The divisor here is because we want half the churn to come from creates and half from deletes (there are no other pod _spec_ changes in this test, and it's only spec changes, not status changes, that count to the official definiton of churn)
 {{$targetDeploymentCreationsPerSecond := DivideFloat $targetPodCreationsPerSecond $PODS_PER_DEPLOYMENT}}
 {{$desiredConcurrentDeployments := MaxInt 1 (DivideFloat $desiredConcurrentPods $PODS_PER_DEPLOYMENT)}}  # must have at least 1 deplyoment
 {{$concurrentDeploymentsPerNS := MaxInt 1 (DivideFloat $desiredConcurrentDeployments $NS_COUNT)}}
