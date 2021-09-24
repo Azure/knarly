@@ -1,10 +1,12 @@
 name: Run CI E2E
 on:
   pull_request_target:
+    types: [ labeled ]
     branches:
       - main
 jobs:
   ci-e2e:
+    if: contains(github.event.pull_request.labels.*.name, 'safe to test')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
