@@ -10,7 +10,8 @@ name: deployment-churn
 {{$ACTIVE_PODS_PER_NODE := DefaultParam .CL2_PODS_PER_NODE 60}}
 {{$PODS_PER_DEPLOYMENT := DefaultParam .CL2_PODS_PER_DEPLOYMENT 100}}
 {{$TARGET_POD_CHURN := DefaultParam .CL2_TARGET_POD_CHURN 10}}  # i.e. target pod churn, in mutations/sec, for cluster as a whole. (create+update+delete operations per second)
-{{$NS_COUNT := DefaultParam .CL2_NS_COUNT 10}}  
+{{$NS_COUNT := DefaultParam .CL2_NS_COUNT 10}} 
+{{$NODE_COUNT := DefaultParam .CL2_NODE_COUNT .Nodes}}           # when testing Cluster Autoscaler, specify the node count you want (and use a pods per per node value that is about 4 less than the AzCNI max pods (per node) limit in your cluster) , and set a large value for CL2_POD_START_TIMEOUT_MINS
 {{$POD_START_TIMEOUT_MINS := DefaultParam .CL2_POD_START_TIMEOUT_MINS 5}}  # how long to wait, at end of a phase, for its pods to start up
 {{$CHURN_FRACTION := DefaultParam .CL2_CHURN_FRACTION 1.0}}  # Set below 1 for faster churn phase, IFF cleanup is set to 0
 {{$CLEANUP := DefaultParam .CL2_CLEANUP 1}}
@@ -21,7 +22,7 @@ name: deployment-churn
 # So, if you have set that parameter in your API server, then set the CL2_CLEANUP parameter to 0
 
 # computed params
-{{$desiredConcurrentPods := MultiplyInt .Nodes $ACTIVE_PODS_PER_NODE}}  #Total number of active pods for cluster
+{{$desiredConcurrentPods := MultiplyInt $NODE_COUNT $ACTIVE_PODS_PER_NODE}}  #Total number of active pods for cluster
 {{$targetPodCreationsPerSecond := DivideInt $TARGET_POD_CHURN 2 }}  # The divisor here is because we want half the churn to come from creates and half from deletes (there are no other pod _spec_ changes in this test, and it's only spec changes, not status changes, that count to the official definiton of churn)
 {{$targetDeploymentCreationsPerSecond := DivideFloat $targetPodCreationsPerSecond $PODS_PER_DEPLOYMENT}}
 {{$desiredConcurrentDeployments := MaxInt 1 (DivideFloat $desiredConcurrentPods $PODS_PER_DEPLOYMENT)}}  # must have at least 1 deplyoment
@@ -59,7 +60,7 @@ steps:
 
 #### Log params ###
 # Can't find a log action, but the above name should function like a log, to let us see the computeed sleep seconds
-- name: Log - deployment creations {{$targetDeploymentCreationsPerSecond}}/s, , pods per deployment {{$PODS_PER_DEPLOYMENT}}, deployments to create/churn perNS {{$concurrentDeploymentsPerNS}}/{{$deploymentsToRecreatePerNS}}, number of NSs {{$NS_COUNT}}, expected seconds in startup/churn phases {{$expectedSecondsInStartupPhase}}/{{$expectedSecondsInChurnPhase}}, pod start timeout {{$podStartTimeout}}
+- name: Log - deployment creations {{$targetDeploymentCreationsPerSecond}}/s, , pods per deployment {{$PODS_PER_DEPLOYMENT}}, deployments to create/churn perNS {{$concurrentDeploymentsPerNS}}/{{$deploymentsToRecreatePerNS}}, target nodes {{$NODE_COUNT}}, number of NSs {{$NS_COUNT}}, expected seconds in startup/churn phases {{$expectedSecondsInStartupPhase}}/{{$expectedSecondsInChurnPhase}}, pod start timeout {{$podStartTimeout}}
   measurements:
   - Identifier: Dummy
     Method: Sleep
