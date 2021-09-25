@@ -60,7 +60,7 @@ steps:
 
 #### Log params ###
 # Can't find a log action, but the above name should function like a log, to let us see the computeed sleep seconds
-- name: Log - deployment creations {{$targetDeploymentCreationsPerSecond}}/s, , pods per deployment {{$PODS_PER_DEPLOYMENT}}, deployments to create/churn perNS {{$concurrentDeploymentsPerNS}}/{{$deploymentsToRecreatePerNS}}, target nodes {{$NODE_COUNT}}, number of NSs {{$NS_COUNT}}, expected seconds in startup/churn phases {{$expectedSecondsInStartupPhase}}/{{$expectedSecondsInChurnPhase}}, pod start timeout {{$podStartTimeout}}
+- name: Log - deployment creations {{$targetDeploymentCreationsPerSecond}}/s, , pods per deployment {{$PODS_PER_DEPLOYMENT}}, deployments to create/churn perNS {{$concurrentDeploymentsPerNS}}/{{$deploymentsToRecreatePerNS}}, nodes current/target {{$.Nodes}}/{{$NODE_COUNT}}, number of NSs {{$NS_COUNT}}, expected seconds in startup/churn phases {{$expectedSecondsInStartupPhase}}/{{$expectedSecondsInChurnPhase}}, pod start timeout {{$podStartTimeout}}
   measurements:
   - Identifier: Dummy
     Method: Sleep
