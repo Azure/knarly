@@ -13,6 +13,7 @@ name: deployment-churn
 {{$NS_COUNT := DefaultParam .CL2_NS_COUNT 10}}  
 {{$POD_START_TIMEOUT_MINS := DefaultParam .CL2_POD_START_TIMEOUT_MINS 5}}  # how long to wait, at end of a phase, for its pods to start up
 {{$CHURN_FRACTION := DefaultParam .CL2_CHURN_FRACTION 1.0}}  # Set below 1 for faster churn phase, IFF cleanup is set to 0
+{{$REPEATS := DefaultParam .CL2_REPEATS 1}}  # How many times to repeat the churn phase.  Set to non-zero value for longer-running tests
 {{$CLEANUP := DefaultParam .CL2_CLEANUP 1}}
 # Note on CLEANUP of pods and deployments that we create.
 # By default we do clean them up explicitly, because by default letting them just get deleted with the namespace is slow.
@@ -41,6 +42,11 @@ name: deployment-churn
    error: when using explicit cleanup, churn fraction must be 1.0 # otherwise the cleanup doesn't work
 {{end}}
 
+{{if and (ne $REPEATS 1) (ne $CHURN_FRACTION 1.0)}}
+   # there is nothing actually called error:.  The next line will force a compliation error. Please read what it says, if you get the error
+   error: when using more than 1 repeat, churn fraction must be 1.0 # otherwise our churn code doesn't work properly, and there's no point anywany, because the whole point of $REPEATS is longer test, and the whole point of Churn Fraction < 1 is shorter tests
+{{end}}
+
 namespace:
   number: {{$NS_COUNT}}
   deleteStaleNamespaces: true # delete any old ones from previous failed CL2 runs (We seem to need this, because stuff got pick up from other test namespaces, WaitForRunningPods. Don't know why! It shouldn't work like that.)
@@ -59,7 +65,7 @@ steps:
 
 #### Log params ###
 # Can't find a log action, but the above name should function like a log, to let us see the computeed sleep seconds
-- name: Log - deployment creations {{$targetDeploymentCreationsPerSecond}}/s, , pods per deployment {{$PODS_PER_DEPLOYMENT}}, deployments to create/churn perNS {{$concurrentDeploymentsPerNS}}/{{$deploymentsToRecreatePerNS}}, number of NSs {{$NS_COUNT}}, expected seconds in startup/churn phases {{$expectedSecondsInStartupPhase}}/{{$expectedSecondsInChurnPhase}}, pod start timeout {{$podStartTimeout}}
+- name: Log - deployment creations {{$targetDeploymentCreationsPerSecond}}/s, pods per deployment {{$PODS_PER_DEPLOYMENT}}, deployments to create/churn per namespace {{$concurrentDeploymentsPerNS}}/{{$deploymentsToRecreatePerNS}}, number of namespaces {{$NS_COUNT}}, expected seconds in startup/one churn phase {{$expectedSecondsInStartupPhase}}/{{$expectedSecondsInChurnPhase}}, num churn phases {{$REPEATS}} pod start timeout {{$podStartTimeout}}
   measurements:
   - Identifier: Dummy
     Method: Sleep
@@ -76,7 +82,7 @@ steps:
        action: start
        label: overall duration  # can't just "declare" a timer, without starting it.
 
-### Test, in multiple rounds of "churn creation"
+### Create initial set of pods
 - module:
     path: /churn-module.yaml
     params:
@@ -88,23 +94,28 @@ steps:
       totalPods: {{$expectedConcurrentPods}}
       timeout: {{$podStartTimeout}}
       nsCount: {{$NS_COUNT}}
+
+### One or more rounds of churn
+{{range $i := Loop $REPEATS}}
 - module:
     path: /churn-module.yaml
     params:
-      roundNumber: 2  # this round does the real work
-      desc: Do the churn test
+      roundNumber: {{AddInt $i 2}}  # add two to the range variable because our first churn round is numbered 2
+      desc: Do churn
       oldReplicasAfterDeletion: {{$deploymentsToKeepPerNS}}  # delete all the old ones EXCEPT this many
       newReplicas: {{$deploymentsToRecreatePerNS}}           # and create this many new ones
       podsPerDeployment: {{$PODS_PER_DEPLOYMENT}}
       totalPods: {{$expectedConcurrentPods}}
       timeout: {{$podStartTimeout}}
       nsCount: {{$NS_COUNT}}
+{{end}}      
 
+### cleanup
 {{if ne $CLEANUP 0}}      
 - module:
     path: /churn-module.yaml
     params:
-      roundNumber: 3
+      roundNumber: {{AddInt $REPEATS 2}}  # add two, because we use 1-based round numbers
       desc: Cleanup
       oldReplicasAfterDeletion: 0
       newReplicas: 0          
