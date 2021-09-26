@@ -86,7 +86,7 @@ steps:
 - module:
     path: /churn-module.yaml
     params:
-      roundNumber: 1  # this is a setup round. It has nothing to delete
+      roundNumber: 0  # this is a setup round. It has nothing to delete
       desc: Prepare initial set of deployments
       oldReplicasAfterDeletion: 0
       newReplicas: {{$concurrentDeploymentsPerNS}}
@@ -100,7 +100,7 @@ steps:
 - module:
     path: /churn-module.yaml
     params:
-      roundNumber: {{AddInt $i 2}}  # add two to the range variable because our first churn round is numbered 2
+      roundNumber: {{AddInt $i 1}}  # add two to the range variable because our first churn round is numbered 1
       desc: Do churn
       oldReplicasAfterDeletion: {{$deploymentsToKeepPerNS}}  # delete all the old ones EXCEPT this many
       newReplicas: {{$deploymentsToRecreatePerNS}}           # and create this many new ones
@@ -115,7 +115,7 @@ steps:
 - module:
     path: /churn-module.yaml
     params:
-      roundNumber: {{AddInt $REPEATS 2}}  # add two, because we use 1-based round numbers
+      roundNumber: {{AddInt $REPEATS 1}}  
       desc: Cleanup
       oldReplicasAfterDeletion: 0
       newReplicas: 0          
