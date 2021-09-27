@@ -59,7 +59,7 @@ steps:
     Method: WaitForRunningPods
     Params:
       desiredPodCount: {{$.totalPods}} 
-      labelSelector: test-round in (r1, r{{$.roundNumber}})  # since we may carry some over from round 1
+      labelSelector: test-round in (r0, r{{$.roundNumber}})  # since we may carry some over from round 0
       timeout: {{$.timeout}}
 
 - name: end wait timer
