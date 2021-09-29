@@ -32,7 +32,7 @@ name: deployment-churn
 # Shorten the churn phase, by doing only part of it. We churn (i.e. delete and replace) $CHURN_FRACTION of the deployments
 {{$deploymentsToRecreatePerNS := MultiplyInt $concurrentDeploymentsPerNS $CHURN_FRACTION}}  # re-create this many
 {{$deploymentsToKeepPerNS := SubtractInt $concurrentDeploymentsPerNS $deploymentsToRecreatePerNS}} # keep this many from round 1, running throughpout round 2
-{{$expectedConcurrentPods := MultiplyInt (MultiplyInt $concurrentDeploymentsPerNS $NS_COUNT) $PODS_PER_DEPLOYMENT}}  # might be different from $desirnedConcurrentPods due to rounding etc
+
 {{$expectedSecondsInStartupPhase := DivideInt $desiredConcurrentDeployments $targetDeploymentCreationsPerSecond}}  # expected duration of round 1
 {{$expectedSecondsInChurnPhase := DivideInt (MultiplyInt $deploymentsToRecreatePerNS $NS_COUNT) $targetDeploymentCreationsPerSecond}}  # expected duration of round 2
 
@@ -92,7 +92,6 @@ steps:
       oldReplicasAfterDeletion: 0
       newReplicas: {{$concurrentDeploymentsPerNS}}
       podsPerDeployment: {{$PODS_PER_DEPLOYMENT}}
-      totalPods: {{$expectedConcurrentPods}}
       timeout: {{$podStartTimeout}}
       nsCount: {{$NS_COUNT}}
 
@@ -106,7 +105,6 @@ steps:
       oldReplicasAfterDeletion: {{$deploymentsToKeepPerNS}}  # delete all the old ones EXCEPT this many
       newReplicas: {{$deploymentsToRecreatePerNS}}           # and create this many new ones
       podsPerDeployment: {{$PODS_PER_DEPLOYMENT}}
-      totalPods: {{$expectedConcurrentPods}}
       timeout: {{$podStartTimeout}}
       nsCount: {{$NS_COUNT}}
 {{end}}      
