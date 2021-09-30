@@ -4,8 +4,16 @@
 # We have to do it in phases like this because deletion in CL2 is name-based, and so we need the things we are deleting right now
 # to have a different 'base name' from the things we are creating.
 
-{{$previousRoundNum := SubtractInt .roundNumber 1}}
+# TODO: tidy usage of $.field vs .field (for accessing data passed in from config.yaml).  Since we have no loops here, and so
+# no new scopes defined, both should be equivalent - so it would be cleanest to standardize on one, probably the one without the $
+
+{{$previousRoundNum := SubtractInt $.roundNumber 1}}
 {{$fullRoundName := print $.desc " (rnd " $.roundNumber ")"}}
+# compute a slightly lower replicas per NS number, to represent the level we want to "pre-delete" to
+{{$preDelTargetOldReplicas := MaxInt (MultiplyInt $.newReplicas 0.9) $.oldReplicasAfterDeletion}} 
+# compute how many pods (not deployments) we want to see in total finally, and also after pre-deletion
+{{$finalPodCount        := MultiplyInt (AddInt $.newReplicas $.oldReplicasAfterDeletion) (MultiplyInt $.podsPerDeployment $.nsCount)}}
+{{$preDelTargetPodCount := MultiplyInt       $preDelTargetOldReplicas                    (MultiplyInt $.podsPerDeployment $.nsCount)}}
 
 steps:
 - name: begin CRUD timer 
@@ -16,6 +24,35 @@ steps:
       action: start
       label: CRUD for {{$fullRoundName}}
 
+{{if ne $.roundNumber 0.0}}
+# Before we do the real churn, pre-delete a few of the ones we don't want
+# If we don't do this, then we end up with a total number of pods that is greater than
+# what we really want.  Comprised of created new ones PLUS some delete ones that haven't quite gone away yet.
+# This causes the Cluster Autoscaler to have to scale out more, during the churn phase of the test - and we 
+# don't want that because it skews our result. So here, we pre-delete a few pods.
+# NOTE: when you're first learning how this test works, you can safely skip this section, and go 
+# straight to "Do the real churn test" below.
+- name: pre-deletion
+  phases:
+  - namespaceRange:
+      min: 1
+      max: {{.nsCount}}
+    replicasPerNamespace: {{$preDelTargetOldReplicas}}  # set target of having slightly fewer pods than normal, from the previous round
+    tuningSet: TargetDeleteQps  # (reference to tuning set from containing file)
+    objectBundle:
+    - basename: deployment-rnd-{{$previousRoundNum}}-instance  # delete the previous set
+      objectTemplatePath: "deployment.yaml"
+- name: wait for pre-deletion  # wait to make sure the pre-deletion really has worked
+  measurements:
+  - Identifier: WaitForRunningPods 
+    Method: WaitForRunningPods
+    Params:
+      desiredPodCount: {{$preDelTargetPodCount}} 
+      labelSelector: test-round in (r{{$previousRoundNum}})  
+      timeout: {{$.timeout}}  
+{{end}}          
+
+# Do the real churn test
 - name: {{$fullRoundName}}
   phases:  # phases run concurrently if they are within the same step
   - namespaceRange:
@@ -25,7 +62,7 @@ steps:
     tuningSet: TargetDeleteQps  # (reference to tuning set from containing file)
     objectBundle:
     - basename: deployment-rnd-{{$previousRoundNum}}-instance  # delete the previous set
-      objectTemplatePath: "deployment.yaml"
+      objectTemplatePath: "deployment.yaml"  
   - namespaceRange:
       min: 1
       max: {{.nsCount}}
@@ -58,7 +95,7 @@ steps:
   - Identifier: WaitForRunningPods  # unlike WaitForControlledPods, this does not seem to require separate setup and gather phases
     Method: WaitForRunningPods
     Params:
-      desiredPodCount: {{$.totalPods}} 
+      desiredPodCount: {{$finalPodCount}} 
       labelSelector: test-round in (r0, r{{$.roundNumber}})  # since we may carry some over from round 0
       timeout: {{$.timeout}}
 
