@@ -4,6 +4,9 @@
 # We have to do it in phases like this because deletion in CL2 is name-based, and so we need the things we are deleting right now
 # to have a different 'base name' from the things we are creating.
 
+# TODO: tidy usage of $.field vs .field (for accessing data passed in from config.yaml).  Since we have no loops here, and so
+# no new scopes defined, both should be equivalent - so it would be cleanest to standardize on one, probably the one without the $
+
 {{$previousRoundNum := SubtractInt $.roundNumber 1}}
 {{$fullRoundName := print $.desc " (rnd " $.roundNumber ")"}}
 # compute a slightly lower replicas per NS number, to represent the level we want to "pre-delete" to
