@@ -4,6 +4,12 @@ on:
     types: [ labeled ]
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      from_branch:
+        description: 'Which branch to run from? (default: main)'
+        required: false
+        default: 'main'
 jobs:
   ci-e2e:
     if: contains(github.event.pull_request.labels.*.name, 'safe to test')
