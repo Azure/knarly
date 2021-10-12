@@ -4,6 +4,12 @@ on:
     types: [ labeled ]
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      from_branch:
+        description: 'Which branch to run from? (default: main)'
+        required: false
+        default: 'main'
 jobs:
   ci-e2e:
     if: contains(github.event.pull_request.labels.*.name, 'safe to test')
@@ -18,6 +24,13 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: '^1.16'
+      - name: install sonobuoy
+        run: |
+          sudo curl -fsSL https://github.com/vmware-tanzu/sonobuoy/releases/download/v0.54.0/sonobuoy_0.54.0_linux_amd64.tar.gz -o sonobuoy_0.54.0_linux_amd64.tar.gz
+          sudo tar -xvf ./sonobuoy_0.54.0_linux_amd64.tar.gz
+          sudo chmod +x ./sonobuoy
+          sudo mv ./sonobuoy /usr/local/bin/sonobuoy
+          sudo rm ./sonobuoy_0.54.0_linux_amd64.tar.gz
       - name: run E2E
         env:
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}

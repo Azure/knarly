@@ -123,7 +123,14 @@ var _ = Describe("Workload cluster creation", func() {
 		}, result)
 
 		Context("Listing Namespaces in workload cluster", func() {
-			specs.ListNamespaces(ctx, specs.ListNamespacesInput{
+			specs.ListNamespaces(ctx, specs.ClusterTestInput{
+				BootstrapClusterProxy: bootstrapClusterProxy,
+				Cluster:               result.Cluster,
+			})
+		})
+
+		Context("Running conformance tests against workload cluster", func() {
+			specs.RunConformance(ctx, specs.ClusterTestInput{
 				BootstrapClusterProxy: bootstrapClusterProxy,
 				Cluster:               result.Cluster,
 			})
@@ -156,7 +163,14 @@ var _ = Describe("Workload cluster creation", func() {
 		}, result)
 
 		Context("Listing Namespaces in workload cluster", func() {
-			specs.ListNamespaces(ctx, specs.ListNamespacesInput{
+			specs.ListNamespaces(ctx, specs.ClusterTestInput{
+				BootstrapClusterProxy: bootstrapClusterProxy,
+				Cluster:               result.Cluster,
+			})
+		})
+
+		Context("Running conformance tests against workload cluster", func() {
+			specs.RunConformance(ctx, specs.ClusterTestInput{
 				BootstrapClusterProxy: bootstrapClusterProxy,
 				Cluster:               result.Cluster,
 			})
