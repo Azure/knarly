@@ -40,8 +40,8 @@ steps:
     replicasPerNamespace: {{$preDelTargetOldReplicas}}  # set target of having slightly fewer pods than normal, from the previous round
     tuningSet: TargetDeleteQps  # (reference to tuning set from containing file)
     objectBundle:
-    - basename: deployment-rnd-{{$previousRoundNum}}-instance  # delete the previous set
-      objectTemplatePath: "deployment.yaml"
+    - basename: {{$.podController}}-rnd-{{$previousRoundNum}}-instance  # delete the previous set
+      objectTemplatePath: {{$.podController}}.yaml
 - name: wait for pre-deletion  # wait to make sure the pre-deletion really has worked
   measurements:
   - Identifier: WaitForRunningPods 
@@ -61,19 +61,21 @@ steps:
     replicasPerNamespace: {{$.oldReplicasAfterDeletion}}
     tuningSet: TargetDeleteQps  # (reference to tuning set from containing file)
     objectBundle:
-    - basename: deployment-rnd-{{$previousRoundNum}}-instance  # delete the previous set
-      objectTemplatePath: "deployment.yaml"  
+    - basename: {{$.podController}}-rnd-{{$previousRoundNum}}-instance  # delete the previous set
+      objectTemplatePath: {{$.podController}}.yaml
   - namespaceRange:
       min: 1
       max: {{.nsCount}}
     replicasPerNamespace: {{$.newReplicas}} 
     tuningSet: TargetCreateQps # (reference to tuning set from containing file)
     objectBundle:
-    - basename: deployment-rnd-{{$.roundNumber}}-instance  # create the new set
-      objectTemplatePath: "deployment.yaml"
+    - basename: {{$.podController}}-rnd-{{$.roundNumber}}-instance  # create the new set
+      objectTemplatePath: {{$.podController}}.yaml
       templateFillMap:
         testRound: r{{$.roundNumber}}
         replicas: {{$.podsPerDeployment}}
+        pvcStorageQuantity: {{$.pvcStorageQuantity}}
+        pvcStorageClass:  {{$.pvcStorageClass}}
 
 - name: end CRUD timer
   measurements:
