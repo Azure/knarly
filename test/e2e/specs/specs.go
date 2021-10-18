@@ -44,3 +44,23 @@ func RunConformance(ctx context.Context, input ClusterTestInput) {
 	Expect(err).ToNot(HaveOccurred())
 	utils.Logf("%s\n", out)
 }
+
+func RunPodChurnTest(ctx context.Context, input ClusterTestInput) {
+	specName := "run-pod-churn-tests"
+	Expect(input.BootstrapClusterProxy).NotTo(BeNil(), "Invalid argument. input.BootstrapClusterProxy can't be nil when calling %s spec", specName)
+	Expect(input.Cluster).NotTo(BeNil(), "Invalid argument. input.Cluster can't be nil when calling %s spec", specName)
+	clusterProxy := input.BootstrapClusterProxy.GetWorkloadCluster(ctx, input.Cluster.Namespace, input.Cluster.Name)
+	kubeConfigPath := clusterProxy.GetKubeconfigPath()
+	clusterloader2Command := exec.Command("go", "run", "cmd/clusterloader.go", "--testconfig=../../test/workloads/deployment-churn/config.yaml", "--provider=aks", fmt.Sprintf("--kubeconfig=%s", kubeConfigPath), "--v=2", "--enable-exec-service=false")
+	clusterloader2Command.Env = append(os.Environ(), fmt.Sprintf("CL2_NS_COUNT=%d", 15),
+		fmt.Sprintf("CL2_CLEANUP=%d", 0),
+		fmt.Sprintf("CL2_REPEATS=%d", 4),
+		fmt.Sprintf("CL2_POD_START_TIMEOUT_MINS=%d", 20),
+		fmt.Sprintf("CL2_PODS_PER_NODE=%d", 5),
+		fmt.Sprintf("CL2_TARGET_POD_CHURN=%d", 75),
+		fmt.Sprintf("CL2_PODS_PER_DEPLOYMENT=%d", 32))
+	clusterloader2Command.Dir = "perf-tests/clusterloader2"
+	out, err := clusterloader2Command.CombinedOutput()
+	Expect(err).ToNot(HaveOccurred())
+	utils.Logf("%s\n", out)
+}
