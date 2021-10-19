@@ -1,7 +1,7 @@
 name: deployment-churn
 # Churn test with deployments
 # This test works like the pod-churn one, but it groups the pods together into deployments.
-# Note that, for high values of PODS_PER_DEPLOYMENT its interaction with the API server will get 
+# Note that, for high values of PODS_PER_DEPLOYMENT its interaction with the API server will get
 # quite chunky. E.g. if it makes a deployment with 1000 pods, that's just one operation, and this test
 # does not control or define the rate at which those pods get created. (I.e. this test only controls the rate
 # at which _deployments_ are created.)
@@ -10,7 +10,7 @@ name: deployment-churn
 {{$ACTIVE_PODS_PER_NODE := DefaultParam .CL2_PODS_PER_NODE 60}}
 {{$PODS_PER_DEPLOYMENT := DefaultParam .CL2_PODS_PER_DEPLOYMENT 100}}
 {{$TARGET_POD_CHURN := DefaultParam .CL2_TARGET_POD_CHURN 10}}  # i.e. target pod churn, in mutations/sec, for cluster as a whole. (create+update+delete operations per second)
-{{$NS_COUNT := DefaultParam .CL2_NS_COUNT 10}} 
+{{$NS_COUNT := DefaultParam .CL2_NS_COUNT 10}}
 {{$NODE_COUNT := DefaultParam .CL2_NODE_COUNT .Nodes}}           # when testing Cluster Autoscaler, specify the node count you want (and use a pods per per node value that is about 4 less than the AzCNI max pods (per node) limit in your cluster) , and set a large value for CL2_POD_START_TIMEOUT_MINS
 {{$POD_START_TIMEOUT_MINS := DefaultParam .CL2_POD_START_TIMEOUT_MINS 5}}  # how long to wait, at end of a phase, for its pods to start up
 {{$CHURN_FRACTION := DefaultParam .CL2_CHURN_FRACTION 1.0}}  # Set below 1 for faster churn phase, IFF cleanup is set to 0
@@ -18,7 +18,7 @@ name: deployment-churn
 {{$CLEANUP := DefaultParam .CL2_CLEANUP 1}}
 # Note on CLEANUP of pods and deployments that we create.
 # By default we do clean them up explicitly, because by default letting them just get deleted with the namespace is slow.
-# However, if delete-collection-workers has been set to a highish value (e.g. 250) in the API server params, then 
+# However, if delete-collection-workers has been set to a highish value (e.g. 250) in the API server params, then
 # there is no need for us to delete them explicitly. They'l be deleted quickly when this test deletes its namespace.
 # So, if you have set that parameter in your API server, then set the CL2_CLEANUP parameter to 0
 
@@ -85,7 +85,7 @@ steps:
 
 ### Create initial set of pods
 - module:
-    path: /churn-module.yaml
+    path: churn-module.yaml
     params:
       roundNumber: 0  # this is a setup round. It has nothing to delete
       desc: Prepare initial set of deployments
@@ -98,7 +98,7 @@ steps:
 ### One or more rounds of churn
 {{range $i := Loop $REPEATS}}
 - module:
-    path: /churn-module.yaml
+    path: churn-module.yaml
     params:
       roundNumber: {{AddInt $i 1}}  # add two to the range variable because our first churn round is numbered 1
       desc: Do churn
@@ -107,17 +107,17 @@ steps:
       podsPerDeployment: {{$PODS_PER_DEPLOYMENT}}
       timeout: {{$podStartTimeout}}
       nsCount: {{$NS_COUNT}}
-{{end}}      
+{{end}}
 
 ### cleanup
-{{if ne $CLEANUP 0}}      
+{{if ne $CLEANUP 0}}
 - module:
-    path: /churn-module.yaml
+    path: churn-module.yaml
     params:
-      roundNumber: {{AddInt $REPEATS 1}}  
+      roundNumber: {{AddInt $REPEATS 1}}
       desc: Cleanup
       oldReplicasAfterDeletion: 0
-      newReplicas: 0          
+      newReplicas: 0
       podsPerDeployment: {{$PODS_PER_DEPLOYMENT}}
       totalPods: 0
       timeout: {{$podStartTimeout}}
@@ -131,4 +131,3 @@ steps:
     Method: Timer
     Params:
       action: gather
-  
