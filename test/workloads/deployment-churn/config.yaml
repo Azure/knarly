@@ -85,7 +85,7 @@ steps:
 
 ### Create initial set of pods
 - module:
-    path: churn-module.yaml
+    path: ./churn-module.yaml
     params:
       roundNumber: 0  # this is a setup round. It has nothing to delete
       desc: Prepare initial set of deployments
@@ -98,7 +98,7 @@ steps:
 ### One or more rounds of churn
 {{range $i := Loop $REPEATS}}
 - module:
-    path: churn-module.yaml
+    path: ./churn-module.yaml
     params:
       roundNumber: {{AddInt $i 1}}  # add two to the range variable because our first churn round is numbered 1
       desc: Do churn
@@ -112,7 +112,7 @@ steps:
 ### cleanup
 {{if ne $CLEANUP 0}}
 - module:
-    path: churn-module.yaml
+    path: ./churn-module.yaml
     params:
       roundNumber: {{AddInt $REPEATS 1}}
       desc: Cleanup
