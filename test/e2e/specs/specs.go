@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/azure/knarly/test/e2e/utils"
 	. "github.com/onsi/gomega"
@@ -62,8 +63,10 @@ func RunPodChurnTest(ctx context.Context, input ClusterTestInput) {
 		fmt.Sprintf("CL2_PODS_PER_DEPLOYMENT=%d", 32))
 	ex, err := os.Executable()
 	cwd := filepath.Dir(ex)
+	cwdSlice := strings.Split(cwd, "/")
+	gitRootFilepath := strings.Join(cwdSlice[:len(cwdSlice)-2], "/")
 	Expect(err).ToNot(HaveOccurred())
-	clusterloader2Command.Dir = fmt.Sprintf("%s/perf-tests/clusterloader2", cwd)
+	clusterloader2Command.Dir = fmt.Sprintf("%s/perf-tests/clusterloader2", gitRootFilepath)
 	out, err := clusterloader2Command.CombinedOutput()
 	Expect(err).ToNot(HaveOccurred())
 	utils.Logf("%s\n", out)
