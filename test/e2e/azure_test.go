@@ -136,12 +136,12 @@ var _ = Describe("Workload cluster creation", func() {
 			})
 		})
 
-		Context("Running conformance tests against workload cluster", func() {
+		/*Context("Running conformance tests against workload cluster", func() {
 			specs.RunConformance(ctx, specs.ClusterTestInput{
 				BootstrapClusterProxy: bootstrapClusterProxy,
 				Cluster:               result.Cluster,
 			})
-		})
+		})*/
 	})
 
 	/*It("With the aks flavor", func() {

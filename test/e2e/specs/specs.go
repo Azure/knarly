@@ -53,7 +53,12 @@ func RunPodChurnTest(ctx context.Context, input ClusterTestInput) {
 	Expect(input.Cluster).NotTo(BeNil(), "Invalid argument. input.Cluster can't be nil when calling %s spec", specName)
 	clusterProxy := input.BootstrapClusterProxy.GetWorkloadCluster(ctx, input.Cluster.Namespace, input.Cluster.Name)
 	kubeConfigPath := clusterProxy.GetKubeconfigPath()
-	clusterloader2Command := exec.Command("go", "run", "cmd/clusterloader.go", "--testconfig=../../test/workloads/deployment-churn/config.yaml", "--provider=aks", fmt.Sprintf("--kubeconfig=%s", kubeConfigPath), "--v=2", "--enable-exec-service=false")
+	ex, err := os.Executable()
+	Expect(err).ToNot(HaveOccurred())
+	cwd := filepath.Dir(ex)
+	cwdSlice := strings.Split(cwd, "/")
+	gitRootFilepath := strings.Join(cwdSlice[:len(cwdSlice)-2], "/")
+	clusterloader2Command := exec.Command("go", "run", "cmd/clusterloader.go", fmt.Sprintf("--testconfig=%s/test/workloads/deployment-churn/config.yaml", gitRootFilepath), "--provider=aks", fmt.Sprintf("--kubeconfig=%s", kubeConfigPath), "--v=2", "--enable-exec-service=false")
 	clusterloader2Command.Env = append(os.Environ(), fmt.Sprintf("CL2_NS_COUNT=%d", 15),
 		fmt.Sprintf("CL2_CLEANUP=%d", 0),
 		fmt.Sprintf("CL2_REPEATS=%d", 4),
@@ -61,11 +66,6 @@ func RunPodChurnTest(ctx context.Context, input ClusterTestInput) {
 		fmt.Sprintf("CL2_PODS_PER_NODE=%d", 20),
 		fmt.Sprintf("CL2_TARGET_POD_CHURN=%d", 5),
 		fmt.Sprintf("CL2_PODS_PER_DEPLOYMENT=%d", 32))
-	ex, err := os.Executable()
-	cwd := filepath.Dir(ex)
-	cwdSlice := strings.Split(cwd, "/")
-	gitRootFilepath := strings.Join(cwdSlice[:len(cwdSlice)-2], "/")
-	Expect(err).ToNot(HaveOccurred())
 	clusterloader2Command.Dir = fmt.Sprintf("%s/perf-tests/clusterloader2", gitRootFilepath)
 	out, err := clusterloader2Command.CombinedOutput()
 	Expect(err).ToNot(HaveOccurred())
