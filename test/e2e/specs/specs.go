@@ -58,7 +58,7 @@ func RunPodChurnTest(ctx context.Context, input ClusterTestInput) {
 	cwd := filepath.Dir(ex)
 	cwdSlice := strings.Split(cwd, "/")
 	gitRootFilepath := strings.Join(cwdSlice[:len(cwdSlice)-2], "/")
-	clusterloader2Command := exec.Command("go", "run", "cmd/clusterloader.go", fmt.Sprintf("--testconfig=%s/test/workloads/deployment-churn/config.yaml", gitRootFilepath), "--provider=aks", fmt.Sprintf("--kubeconfig=%s", kubeConfigPath), "--v=2", "--enable-exec-service=false")
+	clusterloader2Command := exec.Command("go", "run", "cmd/clusterloader.go", fmt.Sprintf("--testconfig=%s/test/workloads/deployment-churn/config.yaml", gitRootFilepath), "--provider=aks", fmt.Sprintf("--kubeconfig=%s", kubeConfigPath), "--v=9", "--enable-exec-service=false")
 	clusterloader2Command.Env = append(os.Environ(), fmt.Sprintf("CL2_NS_COUNT=%d", 15),
 		fmt.Sprintf("CL2_CLEANUP=%d", 0),
 		fmt.Sprintf("CL2_REPEATS=%d", 4),
