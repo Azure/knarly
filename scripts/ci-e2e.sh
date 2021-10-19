@@ -33,7 +33,7 @@ cd "${REPO_ROOT}" || exit 1
 : "${AZURE_CLIENT_SECRET:?Environment variable empty or not defined.}"
 
 get_random_region() {
-    local REGIONS=("westus2" "eastus" "eastus2" "westeurope" "uksouth")
+    local REGIONS=("westus2" "eastus2")
     echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
 }
 
@@ -48,7 +48,7 @@ AZURE_CLIENT_SECRET_B64="$(echo -n "$AZURE_CLIENT_SECRET" | base64 | tr -d '\n')
 export AZURE_SUBSCRIPTION_ID_B64 AZURE_TENANT_ID_B64 AZURE_CLIENT_ID_B64 AZURE_CLIENT_SECRET_B64
 
 export AZURE_LOCATION="${AZURE_LOCATION:-$(get_random_region)}"
-export AZURE_CONTROL_PLANE_MACHINE_TYPE="${AZURE_CONTROL_PLANE_MACHINE_TYPE:-"Standard_D2s_v3"}"
+export AZURE_CONTROL_PLANE_MACHINE_TYPE="${AZURE_CONTROL_PLANE_MACHINE_TYPE:-"Standard_D32s_v3"}"
 export AZURE_NODE_MACHINE_TYPE="${AZURE_NODE_MACHINE_TYPE:-"Standard_D2s_v3"}"
 export KIND_EXPERIMENTAL_DOCKER_NETWORK="bridge"
 

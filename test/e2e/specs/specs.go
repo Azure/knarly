@@ -58,8 +58,8 @@ func RunPodChurnTest(ctx context.Context, input ClusterTestInput) {
 		fmt.Sprintf("CL2_CLEANUP=%d", 0),
 		fmt.Sprintf("CL2_REPEATS=%d", 4),
 		fmt.Sprintf("CL2_POD_START_TIMEOUT_MINS=%d", 20),
-		fmt.Sprintf("CL2_PODS_PER_NODE=%d", 5),
-		fmt.Sprintf("CL2_TARGET_POD_CHURN=%d", 75),
+		fmt.Sprintf("CL2_PODS_PER_NODE=%d", 20),
+		fmt.Sprintf("CL2_TARGET_POD_CHURN=%d", 5),
 		fmt.Sprintf("CL2_PODS_PER_DEPLOYMENT=%d", 32))
 	ex, err := os.Executable()
 	cwd := filepath.Dir(ex)
