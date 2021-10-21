@@ -34,6 +34,10 @@ jobs:
           repository: kubernetes/perf-tests
           path: perf-tests
           ref: release-1.20
+      - name: build clusterloader2 binary
+        path: perf-tests
+        run: |
+          go build cmd/clusterloader.go -o ./clusterloader
       - name: run E2E
         env:
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
