@@ -37,7 +37,7 @@ jobs:
       - name: build clusterloader2 binary
         run: |
           go build cmd/clusterloader.go -o clusterloader
-        working-directory: ./perf-tests
+        working-directory: perf-tests/clusterloader2
       - name: run E2E
         env:
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
