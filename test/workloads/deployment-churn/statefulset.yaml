@@ -9,6 +9,7 @@ spec:
       test-round: {{$.testRound}} 
   serviceName: "unused"
   replicas: {{$.replicas}}
+  podManagementPolicy: Parallel
   template:
     metadata:
       labels:
