@@ -129,6 +129,13 @@ var _ = Describe("Workload cluster creation", func() {
 			})
 		})
 
+		Context("Running pod churn tests against workload cluster", func() {
+			specs.RunPodChurnTest(ctx, specs.ClusterTestInput{
+				BootstrapClusterProxy: bootstrapClusterProxy,
+				Cluster:               result.Cluster,
+			})
+		})
+
 		Context("Running conformance tests against workload cluster", func() {
 			specs.RunConformance(ctx, specs.ClusterTestInput{
 				BootstrapClusterProxy: bootstrapClusterProxy,
@@ -137,7 +144,7 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
-	It("With the aks flavor", func() {
+	/*It("With the aks flavor", func() {
 		clusterName = utils.GetClusterName(clusterNamePrefix, "aks")
 		clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 			ClusterProxy: bootstrapClusterProxy,
@@ -169,12 +176,19 @@ var _ = Describe("Workload cluster creation", func() {
 			})
 		})
 
+		Context("Running pod churn tests against workload cluster", func() {
+			specs.RunPodChurnTest(ctx, specs.ClusterTestInput{
+				BootstrapClusterProxy: bootstrapClusterProxy,
+				Cluster:               result.Cluster,
+			})
+		})
+
 		Context("Running conformance tests against workload cluster", func() {
 			specs.RunConformance(ctx, specs.ClusterTestInput{
 				BootstrapClusterProxy: bootstrapClusterProxy,
 				Cluster:               result.Cluster,
 			})
 		})
-	})
+	})*/
 
 })
