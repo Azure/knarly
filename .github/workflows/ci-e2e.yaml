@@ -35,7 +35,7 @@ jobs:
           path: perf-tests
           ref: release-1.20
       - name: build clusterloader2 binary
-        path: perf-tests
+        working-directory: perf-tests/clusterloader2
         run: |
           go build cmd/clusterloader.go -o ./clusterloader
       - name: run E2E
