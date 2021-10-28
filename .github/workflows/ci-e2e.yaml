@@ -46,9 +46,9 @@ jobs:
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           CL2_NS_COUNT: 15
           CL2_CLEANUP: 0
-          CL2_REPEATS: 1
+          CL2_REPEATS: 4
           CL2_POD_START_TIMEOUT_MINS: 20
-          CL2_PODS_PER_NODE: 1
-          CL2_TARGET_POD_CHURN: 10
+          CL2_PODS_PER_NODE: 20
+          CL2_TARGET_POD_CHURN: 50
           CL2_PODS_PER_DEPLOYMENT: 64
         run: scripts/ci-e2e.sh
