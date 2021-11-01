@@ -3,6 +3,12 @@ on:
   pull_request_target:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      from_branch:
+        description: 'Which branch to run from? (default: main)'
+        required: false
+        default: 'main'
 jobs:
   ci-e2e:
     runs-on: ubuntu-latest
