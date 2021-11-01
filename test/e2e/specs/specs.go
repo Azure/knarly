@@ -17,6 +17,7 @@ type (
 	}
 )
 
+// ListNamespaces lists namespaces
 func ListNamespaces(ctx context.Context, input ListNamespacesInput) {
 	specName := "list-namespaces"
 	Expect(input.BootstrapClusterProxy).NotTo(BeNil(), "Invalid argument. input.BootstrapClusterProxy can't be nil when calling %s spec", specName)
