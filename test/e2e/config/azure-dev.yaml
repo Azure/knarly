@@ -69,8 +69,7 @@ variables:
   # using a different version for windows because of an issue on azure cloud provider
   # that only affects windows and external load balancer
   # https://github.com/kubernetes-sigs/cloud-provider-azure/issues/706
-  WINDOWS_KUBERNETES_VERSION: "${WINDOWS_KUBERNETES_VERSION:-v1.19.11}"
-  AKS_KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.19.9}"
+  AKS_KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.21.2}"
   CNI: "${PWD}/overlays/calico/calico.yaml"
   REDACT_LOG_SCRIPT: "${PWD}/hack/log/redact.sh"
   EXP_AKS: "true"
