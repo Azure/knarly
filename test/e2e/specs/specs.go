@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"github.com/azure/knarly/test/e2e/utils"
 	. "github.com/onsi/gomega"
@@ -17,6 +19,21 @@ type (
 	ClusterTestInput struct {
 		BootstrapClusterProxy framework.ClusterProxy
 		Cluster               *clusterv1.Cluster
+	}
+
+	PodChurnTestConfig struct {
+		// Cleanup indicates whether or not to explicitly cleanup pods after test, 0=no, 1=yes
+		Cleanup int
+		// NumChurnIterations is the number of pod churn lifecycles to perform during the test
+		NumChurnIterations int
+		// PodStartTimeoutMins indicates how long to wait for all pods to be running
+		PodStartTimeoutMins int
+		// PodsPerNode determines how many pods to create, per node, in the cluster
+		PodsPerNode int
+		// PodChurnRate configures the desired pods to create, and delete per second
+		PodChurnRate int
+		// PodsPerDeployment sets the maximum number of pod replicas in a single deployment; as more pods are needed,
+		PodsPerDeployment int
 	}
 )
 
@@ -32,34 +49,26 @@ func ListNamespaces(ctx context.Context, input ClusterTestInput) {
 	utils.Logf("namespaces in workload cluster are %+v", list.Items)
 }
 
-func RunConformance(ctx context.Context, input ClusterTestInput) {
-	specName := "run-conformance"
-	Expect(input.BootstrapClusterProxy).NotTo(BeNil(), "Invalid argument. input.BootstrapClusterProxy can't be nil when calling %s spec", specName)
-	Expect(input.Cluster).NotTo(BeNil(), "Invalid argument. input.Cluster can't be nil when calling %s spec", specName)
-	clusterProxy := input.BootstrapClusterProxy.GetWorkloadCluster(ctx, input.Cluster.Namespace, input.Cluster.Name)
-	kubeConfigPath := clusterProxy.GetKubeconfigPath()
-	sonobuoyCommand := exec.Command("sonobuoy", "run", "--wait", "--plugin", "e2e", "--wait", "--e2e-skip", "\\[Serial\\]", "--e2e-focus", "\\[Conformance\\]", "--timeout=86400")
-	sonobuoyCommand.Env = append(os.Environ(), fmt.Sprintf("KUBECONFIG=%s", kubeConfigPath))
-	out, err := sonobuoyCommand.CombinedOutput()
-	Expect(err).ToNot(HaveOccurred())
-	utils.Logf("%s\n", out)
-}
-
-func RunPodChurnTest(ctx context.Context, input ClusterTestInput) {
+func RunPodChurnTest(ctx context.Context, input ClusterTestInput, testConfig PodChurnTestConfig) {
 	specName := "run-pod-churn-tests"
 	Expect(input.BootstrapClusterProxy).NotTo(BeNil(), "Invalid argument. input.BootstrapClusterProxy can't be nil when calling %s spec", specName)
 	Expect(input.Cluster).NotTo(BeNil(), "Invalid argument. input.Cluster can't be nil when calling %s spec", specName)
 	clusterProxy := input.BootstrapClusterProxy.GetWorkloadCluster(ctx, input.Cluster.Namespace, input.Cluster.Name)
 	kubeConfigPath := clusterProxy.GetKubeconfigPath()
-	clusterloader2Command := exec.Command("go", "run", "cmd/clusterloader.go", "--testconfig=../../test/workloads/deployment-churn/config.yaml", "--provider=aks", fmt.Sprintf("--kubeconfig=%s", kubeConfigPath), "--v=2", "--enable-exec-service=false")
+	ex, err := os.Executable()
+	Expect(err).ToNot(HaveOccurred())
+	cwd := filepath.Dir(ex)
+	cwdSlice := strings.Split(cwd, "/")
+	gitRootFilepath := strings.Join(cwdSlice[:len(cwdSlice)-2], "/")
+	clusterloader2Command := exec.Command("perf-tests/clusterloader2/cmd/clusterloader", fmt.Sprintf("--testconfig=%s/test/workloads/deployment-churn/config.yaml", gitRootFilepath), "--provider=aks", fmt.Sprintf("--kubeconfig=%s", kubeConfigPath), "--v=2", "--enable-exec-service=false")
 	clusterloader2Command.Env = append(os.Environ(), fmt.Sprintf("CL2_NS_COUNT=%d", 15),
-		fmt.Sprintf("CL2_CLEANUP=%d", 0),
-		fmt.Sprintf("CL2_REPEATS=%d", 4),
-		fmt.Sprintf("CL2_POD_START_TIMEOUT_MINS=%d", 20),
-		fmt.Sprintf("CL2_PODS_PER_NODE=%d", 5),
-		fmt.Sprintf("CL2_TARGET_POD_CHURN=%d", 75),
-		fmt.Sprintf("CL2_PODS_PER_DEPLOYMENT=%d", 32))
-	clusterloader2Command.Dir = "perf-tests/clusterloader2"
+		fmt.Sprintf("CL2_CLEANUP=%d", testConfig.Cleanup),
+		fmt.Sprintf("CL2_REPEATS=%d", testConfig.NumChurnIterations),
+		fmt.Sprintf("CL2_POD_START_TIMEOUT_MINS=%d", testConfig.PodStartTimeoutMins),
+		fmt.Sprintf("CL2_PODS_PER_NODE=%d", testConfig.PodsPerNode),
+		fmt.Sprintf("CL2_TARGET_POD_CHURN=%d", testConfig.PodChurnRate),
+		fmt.Sprintf("CL2_PODS_PER_DEPLOYMENT=%d", testConfig.PodsPerDeployment))
+	clusterloader2Command.Dir = gitRootFilepath
 	out, err := clusterloader2Command.CombinedOutput()
 	Expect(err).ToNot(HaveOccurred())
 	utils.Logf("%s\n", out)

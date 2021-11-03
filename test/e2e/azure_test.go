@@ -23,15 +23,23 @@ import (
 
 var _ = Describe("Workload cluster creation", func() {
 	var (
-		ctx               = context.TODO()
-		specName          = "create-workload-cluster"
-		namespace         *corev1.Namespace
-		cancelWatches     context.CancelFunc
-		result            *clusterctl.ApplyClusterTemplateAndWaitResult
-		clusterName       string
-		clusterNamePrefix string
-		additionalCleanup func()
-		specTimes         = map[string]time.Time{}
+		ctx                   = context.TODO()
+		specName              = "create-workload-cluster"
+		namespace             *corev1.Namespace
+		cancelWatches         context.CancelFunc
+		result                *clusterctl.ApplyClusterTemplateAndWaitResult
+		clusterName           string
+		clusterNamePrefix     string
+		additionalCleanup     func()
+		specTimes             = map[string]time.Time{}
+		podChurnRateSLOTarget = specs.PodChurnTestConfig{
+			Cleanup:             1,
+			NumChurnIterations:  1,
+			PodStartTimeoutMins: 20,
+			PodsPerNode:         20,
+			PodChurnRate:        75,
+			PodsPerDeployment:   64,
+		}
 	)
 
 	BeforeEach(func() {
@@ -114,8 +122,8 @@ var _ = Describe("Workload cluster creation", func() {
 				Namespace:                namespace.Name,
 				ClusterName:              clusterName,
 				KubernetesVersion:        e2eConfig.GetVariable(capi_e2e.KubernetesVersion),
-				ControlPlaneMachineCount: pointer.Int64Ptr(1),
-				WorkerMachineCount:       pointer.Int64Ptr(1),
+				ControlPlaneMachineCount: pointer.Int64Ptr(3),
+				WorkerMachineCount:       pointer.Int64Ptr(20),
 			},
 			WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 			WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
@@ -130,21 +138,16 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 
 		Context("Running pod churn tests against workload cluster", func() {
-			specs.RunPodChurnTest(ctx, specs.ClusterTestInput{
-				BootstrapClusterProxy: bootstrapClusterProxy,
-				Cluster:               result.Cluster,
-			})
-		})
-
-		Context("Running conformance tests against workload cluster", func() {
-			specs.RunConformance(ctx, specs.ClusterTestInput{
-				BootstrapClusterProxy: bootstrapClusterProxy,
-				Cluster:               result.Cluster,
-			})
+			specs.RunPodChurnTest(ctx,
+				specs.ClusterTestInput{
+					BootstrapClusterProxy: bootstrapClusterProxy,
+					Cluster:               result.Cluster,
+				},
+				podChurnRateSLOTarget)
 		})
 	})
 
-	/*It("With the aks flavor", func() {
+	It("With the aks flavor", func() {
 		clusterName = utils.GetClusterName(clusterNamePrefix, "aks")
 		clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 			ClusterProxy: bootstrapClusterProxy,
@@ -158,7 +161,7 @@ var _ = Describe("Workload cluster creation", func() {
 				ClusterName:              clusterName,
 				KubernetesVersion:        e2eConfig.GetVariable(utils.AKSKubernetesVersion),
 				ControlPlaneMachineCount: pointer.Int64Ptr(1),
-				WorkerMachineCount:       pointer.Int64Ptr(1),
+				WorkerMachineCount:       pointer.Int64Ptr(20),
 			},
 			WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 			WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
@@ -177,18 +180,13 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 
 		Context("Running pod churn tests against workload cluster", func() {
-			specs.RunPodChurnTest(ctx, specs.ClusterTestInput{
-				BootstrapClusterProxy: bootstrapClusterProxy,
-				Cluster:               result.Cluster,
-			})
+			specs.RunPodChurnTest(ctx,
+				specs.ClusterTestInput{
+					BootstrapClusterProxy: bootstrapClusterProxy,
+					Cluster:               result.Cluster,
+				},
+				podChurnRateSLOTarget)
 		})
-
-		Context("Running conformance tests against workload cluster", func() {
-			specs.RunConformance(ctx, specs.ClusterTestInput{
-				BootstrapClusterProxy: bootstrapClusterProxy,
-				Cluster:               result.Cluster,
-			})
-		})
-	})*/
+	})
 
 })

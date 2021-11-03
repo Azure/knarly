@@ -69,8 +69,7 @@ variables:
   # using a different version for windows because of an issue on azure cloud provider
   # that only affects windows and external load balancer
   # https://github.com/kubernetes-sigs/cloud-provider-azure/issues/706
-  WINDOWS_KUBERNETES_VERSION: "${WINDOWS_KUBERNETES_VERSION:-v1.19.11}"
-  AKS_KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.19.9}"
+  AKS_KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.21.2}"
   CNI: "${PWD}/overlays/calico/calico.yaml"
   REDACT_LOG_SCRIPT: "${PWD}/hack/log/redact.sh"
   EXP_AKS: "true"
@@ -82,9 +81,9 @@ variables:
 
 intervals:
   default/wait-controllers: ["3m", "10s"]
-  default/wait-cluster: ["20m", "10s"]
-  default/wait-control-plane: ["20m", "10s"]
-  default/wait-worker-nodes: ["20m", "10s"]
+  default/wait-cluster: ["90m", "10s"]
+  default/wait-control-plane: ["30m", "10s"]
+  default/wait-worker-nodes: ["60m", "10s"]
   default/wait-delete-cluster: ["30m", "10s"]
   default/wait-machine-upgrade: ["60m", "10s"]
   default/wait-machine-remediation: ["30m", "10s"]
