@@ -1,0 +1,32 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{.Name}}
+spec:
+  selector:
+    matchLabels:
+      app: {{.Name}}
+  serviceName: "unused"
+  replicas: {{$.replicas}}
+  podManagementPolicy: {{$.podManagementPolicy}}
+  template:
+    metadata:
+      labels:
+        app: {{.Name}}
+    spec:
+       containers:
+        - name: load-test
+          image: mcr.microsoft.com/oss/kubernetes/pause:3.5
+          volumeMounts:
+          - mountPath: /data
+            name: {{.Name}}-data
+  volumeClaimTemplates:
+  - metadata:
+      name: {{.Name}}-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: {{$.pvcStorageClass}}
+      resources:
+        requests:
+         storage: {{$.pvcStorageQuantity}} # when supporting premium storage classes, this will need to change to >= 100Gi as that is minimum supported, see note: https://docs.microsoft.com/en-us/azure/aks/azure-files-csi#dynamically-create-azure-files-pvs-by-using-the-built-in-storage-classes

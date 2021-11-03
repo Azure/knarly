@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{.Name}}
+  labels:
+    test-round: {{$.testRound}} 
+spec: 
+  replicas: {{$.replicas}}
+  selector:
+    matchLabels:
+      app: {{.Name}}
+      test-round: {{$.testRound}}
+  template:
+    metadata:
+      labels:
+        app: {{.Name}}
+        test-round: {{$.testRound}}
+    spec:    
+      containers:
+      - name: load-test
+        image: mcr.microsoft.com/oss/kubernetes/pause:3.5

@@ -1,0 +1,36 @@
+# Cluster loader 2 module, for initial create of statefulsets
+{{$fullRoundName := print $.desc " (rnd " $.roundNumber ")"}}
+
+steps:
+- name: begin CRUD timer 
+  measurements:
+  - Identifier: Timer # (reference to timer named "Timer" in containing file)
+    Method: Timer
+    Params:
+      action: start
+      label: CRUD for {{$fullRoundName}}
+
+# Create initial group of statefulSets
+- name: {{$fullRoundName}}
+  phases:  # phases run concurrently if they are within the same step
+  - namespaceRange:
+      min: 1
+      max: {{.nsCount}}
+    replicasPerNamespace: {{$.statefulSetsPerNS}}
+    tuningSet: TargetCreateLoad
+    objectBundle:
+    - basename: {{$.podController}}-instance
+      objectTemplatePath: {{$.podController}}.yaml
+      templateFillMap:
+        replicas: {{$.replicasPerInstance}}
+        pvcStorageQuantity: {{$.pvcStorageQuantity}}
+        pvcStorageClass:  {{$.pvcStorageClass}}
+        podManagementPolicy: {{$.podManagementPolicy}}
+
+- name: end CRUD timer
+  measurements:
+  - Identifier: Timer # (ref to object in containing file)        
+    Method: Timer
+    Params:
+      action: stop
+      label: CRUD for {{$fullRoundName}}

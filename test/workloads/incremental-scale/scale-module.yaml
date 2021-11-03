@@ -1,0 +1,36 @@
+# Cluster loader 2 module, for one phase of "scale"
+{{$fullRoundName := print $.desc " (rnd " $.roundNumber ")"}}
+
+steps:
+- name: begin CRUD timer 
+  measurements:
+  - Identifier: Timer # (reference to timer named "Timer" in containing file)
+    Method: Timer
+    Params:
+      action: start
+      label: CRUD for {{$fullRoundName}}
+
+# Do the real churn test
+- name: {{$fullRoundName}}
+  phases:  
+  - namespaceRange:
+      min: 1
+      max: {{.nsCount}}
+    replicasPerNamespace: {{$.statefulSetsPerNS}} 
+    tuningSet: TargetCreateLoad
+    objectBundle:
+    - basename: {{$.podController}}-instance
+      objectTemplatePath: {{$.podController}}.yaml
+      templateFillMap:
+        replicas: {{$.replicasPerInstance}}
+        pvcStorageQuantity: {{$.pvcStorageQuantity}}
+        pvcStorageClass:  {{$.pvcStorageClass}}
+        podManagementPolicy: {{$.podManagementPolicy}}
+
+- name: end CRUD timer
+  measurements:
+  - Identifier: Timer # (ref to object in containing file)        
+    Method: Timer
+    Params:
+      action: stop
+      label: CRUD for {{$fullRoundName}}
