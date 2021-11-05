@@ -55,11 +55,8 @@ func RunPodChurnTest(ctx context.Context, input ClusterTestInput, testConfig Pod
 	Expect(input.Cluster).NotTo(BeNil(), "Invalid argument. input.Cluster can't be nil when calling %s spec", specName)
 	clusterProxy := input.BootstrapClusterProxy.GetWorkloadCluster(ctx, input.Cluster.Namespace, input.Cluster.Name)
 	kubeConfigPath := clusterProxy.GetKubeconfigPath()
-	ex, err := os.Executable()
+	gitRootFilepath, err := getKnarlyGitRootFilePath()
 	Expect(err).ToNot(HaveOccurred())
-	cwd := filepath.Dir(ex)
-	cwdSlice := strings.Split(cwd, "/")
-	gitRootFilepath := strings.Join(cwdSlice[:len(cwdSlice)-2], "/")
 	clusterloader2Command := exec.Command("perf-tests/clusterloader2/cmd/clusterloader", fmt.Sprintf("--testconfig=%s/test/workloads/deployment-churn/config.yaml", gitRootFilepath), "--provider=aks", fmt.Sprintf("--kubeconfig=%s", kubeConfigPath), "--v=2", "--enable-exec-service=false")
 	clusterloader2Command.Env = append(os.Environ(), fmt.Sprintf("CL2_NS_COUNT=%d", 15),
 		fmt.Sprintf("CL2_CLEANUP=%d", testConfig.Cleanup),
@@ -72,4 +69,27 @@ func RunPodChurnTest(ctx context.Context, input ClusterTestInput, testConfig Pod
 	out, err := clusterloader2Command.CombinedOutput()
 	Expect(err).ToNot(HaveOccurred())
 	utils.Logf("%s\n", out)
+}
+
+func RunVMSSHygiene(ctx context.Context, input ClusterTestInput) *exec.Cmd {
+	gitRootFilepath, err := getKnarlyGitRootFilePath()
+	Expect(err).ToNot(HaveOccurred())
+	vmssHygienePath := exec.Command("scripts/vmss-hygiene.sh")
+	vmssHygienePath.Env = append(os.Environ(), fmt.Sprintf("RESOURCE_GROUP=$%s", utils.AzureResourceGroup),
+		fmt.Sprintf("REGION=$%s", utils.AzureLocation),
+		fmt.Sprintf("NAME=%s", input.Cluster.Name))
+	vmssHygienePath.Dir = gitRootFilepath
+	err = vmssHygienePath.Start()
+	Expect(err).ToNot(HaveOccurred())
+	return vmssHygienePath
+}
+
+func getKnarlyGitRootFilePath() (string, error) {
+	ex, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+	cwd := filepath.Dir(ex)
+	cwdSlice := strings.Split(cwd, "/")
+	return strings.Join(cwdSlice[:len(cwdSlice)-2], "/"), nil
 }

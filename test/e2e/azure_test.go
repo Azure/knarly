@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"syscall"
 	"time"
 
 	"github.com/azure/knarly/test/e2e/specs"
@@ -40,6 +42,7 @@ var _ = Describe("Workload cluster creation", func() {
 			PodChurnRate:        75,
 			PodsPerDeployment:   64,
 		}
+		vmssHygieneCommand *exec.Cmd
 	)
 
 	BeforeEach(func() {
@@ -85,6 +88,9 @@ var _ = Describe("Workload cluster creation", func() {
 	})
 
 	AfterEach(func() {
+		if vmssHygieneCommand != nil {
+			vmssHygieneCommand.Process.Signal(syscall.SIGINT)
+		}
 		if result.Cluster == nil {
 			// this means the cluster failed to come up. We make an attempt to find the cluster to be able to fetch logs for the failed bootstrapping.
 			_ = bootstrapClusterProxy.GetClient().Get(ctx, types.NamespacedName{Name: clusterName, Namespace: namespace.Name}, result.Cluster)
@@ -161,7 +167,7 @@ var _ = Describe("Workload cluster creation", func() {
 				ClusterName:              clusterName,
 				KubernetesVersion:        e2eConfig.GetVariable(utils.AKSKubernetesVersion),
 				ControlPlaneMachineCount: pointer.Int64Ptr(1),
-				WorkerMachineCount:       pointer.Int64Ptr(20),
+				WorkerMachineCount:       pointer.Int64Ptr(1),
 			},
 			WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 			WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
@@ -171,6 +177,38 @@ var _ = Describe("Workload cluster creation", func() {
 				WaitForControlPlaneMachinesReady: WaitForControlPlaneMachinesReady,
 			},
 		}, result)
+
+		Context("Running VMSS Hygiene", func() {
+			vmssHygieneCommand = specs.RunVMSSHygiene(ctx,
+				specs.ClusterTestInput{
+					Cluster: result.Cluster,
+				})
+		})
+
+		Context("Scaling out node pools to 1000", func() {
+			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
+				ClusterProxy: bootstrapClusterProxy,
+				ConfigCluster: clusterctl.ConfigClusterInput{
+					LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
+					ClusterctlConfigPath:     clusterctlConfigPath,
+					KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
+					InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
+					Flavor:                   "aks",
+					Namespace:                namespace.Name,
+					ClusterName:              clusterName,
+					KubernetesVersion:        e2eConfig.GetVariable(utils.AKSKubernetesVersion),
+					ControlPlaneMachineCount: pointer.Int64Ptr(1),
+					WorkerMachineCount:       pointer.Int64Ptr(1000),
+				},
+				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
+				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
+				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized:   WaitForControlPlaneInitialized,
+					WaitForControlPlaneMachinesReady: WaitForControlPlaneMachinesReady,
+				},
+			}, result)
+		})
 
 		Context("Listing Namespaces in workload cluster", func() {
 			specs.ListNamespaces(ctx, specs.ClusterTestInput{
