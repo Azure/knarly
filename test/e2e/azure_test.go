@@ -3,6 +3,8 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -43,6 +45,7 @@ var _ = Describe("Workload cluster creation", func() {
 			PodsPerDeployment:   64,
 		}
 		vmssHygieneCommand *exec.Cmd
+		vmssHygieneStdOut  io.ReadCloser
 	)
 
 	BeforeEach(func() {
@@ -89,6 +92,9 @@ var _ = Describe("Workload cluster creation", func() {
 
 	AfterEach(func() {
 		if vmssHygieneCommand != nil {
+			data, err := ioutil.ReadAll(vmssHygieneStdOut)
+			Expect(err).ToNot(HaveOccurred())
+			utils.Log(string(data))
 			vmssHygieneCommand.Process.Signal(syscall.SIGINT)
 		}
 		if result.Cluster == nil {
@@ -179,13 +185,13 @@ var _ = Describe("Workload cluster creation", func() {
 		}, result)
 
 		Context("Running VMSS Hygiene", func() {
-			vmssHygieneCommand = specs.RunVMSSHygiene(ctx,
+			vmssHygieneCommand, vmssHygieneStdOut = specs.RunVMSSHygiene(ctx,
 				specs.ClusterTestInput{
 					Cluster: result.Cluster,
 				})
 		})
 
-		Context("Scaling out node pools to 1000", func() {
+		Context("Scaling out node pools to 100", func() {
 			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 				ClusterProxy: bootstrapClusterProxy,
 				ConfigCluster: clusterctl.ConfigClusterInput{
@@ -198,7 +204,7 @@ var _ = Describe("Workload cluster creation", func() {
 					ClusterName:              clusterName,
 					KubernetesVersion:        e2eConfig.GetVariable(utils.AKSKubernetesVersion),
 					ControlPlaneMachineCount: pointer.Int64Ptr(1),
-					WorkerMachineCount:       pointer.Int64Ptr(1000),
+					WorkerMachineCount:       pointer.Int64Ptr(100),
 				},
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),

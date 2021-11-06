@@ -3,6 +3,7 @@ package specs
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -71,17 +72,19 @@ func RunPodChurnTest(ctx context.Context, input ClusterTestInput, testConfig Pod
 	utils.Logf("%s\n", out)
 }
 
-func RunVMSSHygiene(ctx context.Context, input ClusterTestInput) *exec.Cmd {
+func RunVMSSHygiene(ctx context.Context, input ClusterTestInput) (*exec.Cmd, io.ReadCloser) {
 	gitRootFilepath, err := getKnarlyGitRootFilePath()
 	Expect(err).ToNot(HaveOccurred())
-	vmssHygienePath := exec.Command("scripts/vmss-hygiene.sh")
-	vmssHygienePath.Env = append(os.Environ(), fmt.Sprintf("RESOURCE_GROUP=$%s", utils.AzureResourceGroup),
+	vmssHygieneCmd := exec.Command("scripts/vmss-hygiene.sh")
+	vmssHygieneCmd.Env = append(os.Environ(), fmt.Sprintf("RESOURCE_GROUP=$%s", utils.AzureResourceGroup),
 		fmt.Sprintf("REGION=$%s", utils.AzureLocation),
 		fmt.Sprintf("NAME=%s", input.Cluster.Name))
-	vmssHygienePath.Dir = gitRootFilepath
-	err = vmssHygienePath.Start()
+	vmssHygieneCmd.Dir = gitRootFilepath
+	stdout, err := vmssHygieneCmd.StdoutPipe()
 	Expect(err).ToNot(HaveOccurred())
-	return vmssHygienePath
+	err = vmssHygieneCmd.Start()
+	Expect(err).ToNot(HaveOccurred())
+	return vmssHygieneCmd, stdout
 }
 
 func getKnarlyGitRootFilePath() (string, error) {
