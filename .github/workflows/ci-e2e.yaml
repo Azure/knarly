@@ -28,6 +28,9 @@ jobs:
           sudo chmod +x ./sonobuoy
           sudo mv ./sonobuoy /usr/local/bin/sonobuoy
           sudo rm ./sonobuoy_0.54.0_linux_amd64.tar.gz
+      - name: Install jq
+        run: |
+          sudo apt-get install jq
       - name: checkout perf-tests
         uses: actions/checkout@v2
         with:

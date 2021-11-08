@@ -160,6 +160,7 @@ var _ = Describe("Workload cluster creation", func() {
 	})
 
 	It("With the aks flavor", func() {
+		utils.Logf("Building AKS cluster")
 		clusterName = utils.GetClusterName(clusterNamePrefix, "aks")
 		clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 			ClusterProxy: bootstrapClusterProxy,
@@ -185,6 +186,7 @@ var _ = Describe("Workload cluster creation", func() {
 		}, result)
 
 		Context("Running VMSS Hygiene", func() {
+			utils.Logf("Running VMSS Hygiene")
 			vmssHygieneCommand, vmssHygieneStdOut = specs.RunVMSSHygiene(ctx,
 				specs.ClusterTestInput{
 					Cluster: result.Cluster,

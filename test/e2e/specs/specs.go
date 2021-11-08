@@ -82,7 +82,9 @@ func RunVMSSHygiene(ctx context.Context, input ClusterTestInput) (*exec.Cmd, io.
 	vmssHygieneCmd.Dir = gitRootFilepath
 	stdout, err := vmssHygieneCmd.StdoutPipe()
 	Expect(err).ToNot(HaveOccurred())
+	utils.Logf("VMSS hygiene command path: %s", vmssHygieneCmd.Path)
 	err = vmssHygieneCmd.Start()
+	utils.Logf("Started VMSS Hygiene command")
 	Expect(err).ToNot(HaveOccurred())
 	return vmssHygieneCmd, stdout
 }
