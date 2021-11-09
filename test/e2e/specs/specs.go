@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/azure/knarly/test/e2e/utils"
+	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
@@ -82,9 +83,9 @@ func RunVMSSHygiene(ctx context.Context, input ClusterTestInput) (*exec.Cmd, io.
 	vmssHygieneCmd.Dir = gitRootFilepath
 	stdout, err := vmssHygieneCmd.StdoutPipe()
 	Expect(err).ToNot(HaveOccurred())
-	utils.Logf("VMSS hygiene command path: %s", vmssHygieneCmd.Path)
+	By(fmt.Sprintf("VMSS hygiene command path: %s", vmssHygieneCmd.Path))
 	err = vmssHygieneCmd.Start()
-	utils.Logf("Started VMSS Hygiene command")
+	By("Started VMSS Hygiene command")
 	Expect(err).ToNot(HaveOccurred())
 	return vmssHygieneCmd, stdout
 }
