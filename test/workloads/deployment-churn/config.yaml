@@ -16,6 +16,7 @@ name: deployment-churn
 {{$CHURN_FRACTION := DefaultParam .CL2_CHURN_FRACTION 1.0}}  # Set below 1 for faster churn phase, IFF cleanup is set to 0
 {{$REPEATS := DefaultParam .CL2_REPEATS 1}}  # How many times to repeat the churn phase.  Set to non-zero value for longer-running tests
 {{$CLEANUP := DefaultParam .CL2_CLEANUP 1}}
+{{$NAMESPACE_CLEANUP := DefaultParam .CL2_NAMESPACE_CLEANUP true}}
 {{$POD_CONTROLLER := DefaultParam .CL2_POD_CONTROLLER "deployment"}}
 # Note on CLEANUP of pods and deployments that we create.
 # By default we do clean them up explicitly, because by default letting them just get deleted with the namespace is slow.
@@ -24,8 +25,9 @@ name: deployment-churn
 # So, if you have set that parameter in your API server, then set the CL2_CLEANUP parameter to 0
 
 # POD_CONTROLLER == statefulSet params
-{{$PVC_STORAGE_CLASS := DefaultParam .CL2_PVC_STORAGE_CLASS "azurefile-csi"}} # azurefile-csi, azurefile-csi-premium, managed-csi, managed-csi-premium
+{{$PVC_STORAGE_CLASS := DefaultParam .CL2_PVC_STORAGE_CLASS "default"}} # azurefile-csi, azurefile-csi-premium, default ( =managed-csi ), managed-csi-premium
 {{$PVC_STORAGE_QUANTITY := DefaultParam .CL2_PVC_STORAGE_QUANTITY "8Gi"}}    #must be > 100Gi for '-premium' storage classes
+{{$POD_MANAGEMENT_POLICY := DefaultParam .CL2_POD_MANAGEMENT_POLICY "OrderedReady"}}    # 'OrderedReady' for incremental statefulset scale up, 'Parallel' for complete immediate pod creation
 
 # computed params
 {{$desiredConcurrentPods := MultiplyInt $NODE_COUNT $ACTIVE_PODS_PER_NODE}}  #Total number of active pods for cluster
@@ -62,8 +64,8 @@ name: deployment-churn
 namespace:
   number: {{$NS_COUNT}}
   deleteStaleNamespaces: true # delete any old ones from previous failed CL2 runs (We seem to need this, because stuff got pick up from other test namespaces, WaitForRunningPods. Don't know why! It shouldn't work like that.)
-  deleteAutomanagedNamespaces: true # delete at end of test
-  enableExistingNamespaces: false # only use the automanged ones that CL2 creates for us
+  deleteAutomanagedNamespaces: {{$NAMESPACE_CLEANUP}} # delete at end of test
+  enableExistingNamespaces: false # only use the automanged ones that CL2 createds for us
 
 tuningSets:
 - name: TargetCreateQps
@@ -108,6 +110,7 @@ steps:
       podController: {{$POD_CONTROLLER}} 
       pvcStorageQuantity: {{$PVC_STORAGE_QUANTITY}}
       pvcStorageClass:  {{$PVC_STORAGE_CLASS}}
+      podManagementPolicy: {{$POD_MANAGEMENT_POLICY}}
 
 ### One or more rounds of churn
 {{range $i := Loop $REPEATS}}
@@ -124,6 +127,7 @@ steps:
       podController: {{$POD_CONTROLLER}}
       pvcStorageQuantity: {{$PVC_STORAGE_QUANTITY}}
       pvcStorageClass:  {{$PVC_STORAGE_CLASS}}
+      podManagementPolicy: {{$POD_MANAGEMENT_POLICY}}
 {{end}}
 
 ### cleanup
@@ -142,6 +146,7 @@ steps:
       podController: {{$POD_CONTROLLER}}
       pvcStorageQuantity: {{$PVC_STORAGE_QUANTITY}}
       pvcStorageClass:  {{$PVC_STORAGE_CLASS}}
+      podManagementPolicy: {{$POD_MANAGEMENT_POLICY}}
 {{end}}
 
 ### Gather measurements

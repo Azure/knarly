@@ -9,7 +9,7 @@ spec:
       test-round: {{$.testRound}} 
   serviceName: "unused"
   replicas: {{$.replicas}}
-  podManagementPolicy: Parallel
+  podManagementPolicy: {{$.podManagementPolicy}} #Parallel OrderedReady
   template:
     metadata:
       labels:
@@ -18,7 +18,7 @@ spec:
     spec:
        containers:
         - name: load-test
-          image: mcr.microsoft.com/oss/kubernetes/pause:3.4.1 #locally present image, prevents need to pull
+          image: mcr.microsoft.com/oss/kubernetes/pause:3.5
           volumeMounts:
           - mountPath: /data
             name: {{.Name}}-data

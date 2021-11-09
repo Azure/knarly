@@ -6,7 +6,6 @@
 
 # TODO: tidy usage of $.field vs .field (for accessing data passed in from config.yaml).  Since we have no loops here, and so
 # no new scopes defined, both should be equivalent - so it would be cleanest to standardize on one, probably the one without the $
-
 {{$previousRoundNum := SubtractInt $.roundNumber 1}}
 {{$fullRoundName := print $.desc " (rnd " $.roundNumber ")"}}
 # compute a slightly lower replicas per NS number, to represent the level we want to "pre-delete" to
@@ -76,6 +75,7 @@ steps:
         replicas: {{$.podsPerDeployment}}
         pvcStorageQuantity: {{$.pvcStorageQuantity}}
         pvcStorageClass:  {{$.pvcStorageClass}}
+        podManagementPolicy: {{$.podManagementPolicy}}
 
 - name: end CRUD timer
   measurements:
