@@ -9,7 +9,8 @@ name: incremental-scale
 {{$PODS_PER_SCALE_STEP := DefaultParam .CL2_PODS_PER_SCALE_STEP 500}} #across all statefulsets
 {{$STEP_DELAY := DefaultParam .CL2_STEP_DELAY "30m"}} # half an hour
 
-{{$NAMESPACE_CLEANUP_AFTER := DefaultParam .CL2_NAMESPACE_CLEANUP_AFTER true}}
+{{$DELETE_AUTOMANAGED_NAMESPACES := DefaultParam .DELETE_AUTOMANAGED_NAMESPACES true}}
+{{$DELETE_STALE_NAMESPACES := DefaultParam .CL2_DELETE_STALE_NAMESPACES true}}
 
 # POD_CONTROLLER == statefulSet params
 {{$PVC_STORAGE_CLASS := DefaultParam .CL2_PVC_STORAGE_CLASS "default"}} # azurefile-csi, azurefile-csi-premium, default (=managed-csi), managed-csi-premium
@@ -33,8 +34,8 @@ tuningSets:
 
 namespace:
   number: {{$NS_COUNT}}
-  deleteStaleNamespaces: true # delete any old ones from previous failed CL2 runs (We seem to need this, because stuff got pick up from other test namespaces, WaitForRunningPods. Don't know why! It shouldn't work like that.)
-  deleteAutomanagedNamespaces: {{$NAMESPACE_CLEANUP_AFTER}} # delete at end of test
+  deleteStaleNamespaces: {{$DELETE_STALE_NAMESPACES}} # delete any old ones from previous failed CL2 runs (We seem to need this, because stuff got pick up from other test namespaces, WaitForRunningPods. Don't know why! It shouldn't work like that.)
+  deleteAutomanagedNamespaces: {{$DELETE_AUTOMANAGED_NAMESPACES}} # delete at end of test
   enableExistingNamespaces: false # only use the automanged ones that CL2 creates for us
 
 steps:

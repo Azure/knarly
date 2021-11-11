@@ -16,7 +16,8 @@ name: deployment-churn
 {{$CHURN_FRACTION := DefaultParam .CL2_CHURN_FRACTION 1.0}}  # Set below 1 for faster churn phase, IFF cleanup is set to 0
 {{$REPEATS := DefaultParam .CL2_REPEATS 1}}  # How many times to repeat the churn phase.  Set to non-zero value for longer-running tests
 {{$CLEANUP := DefaultParam .CL2_CLEANUP 1}}
-{{$NAMESPACE_CLEANUP := DefaultParam .CL2_NAMESPACE_CLEANUP true}}
+{{$DELETE_AUTOMANAGED_NAMESPACES := DefaultParam .DELETE_AUTOMANAGED_NAMESPACES true}}
+{{$DELETE_STALE_NAMESPACES := DefaultParam .CL2_DELETE_STALE_NAMESPACES true}}
 {{$POD_CONTROLLER := DefaultParam .CL2_POD_CONTROLLER "deployment"}}
 # Note on CLEANUP of pods and deployments that we create.
 # By default we do clean them up explicitly, because by default letting them just get deleted with the namespace is slow.
@@ -63,8 +64,8 @@ name: deployment-churn
 
 namespace:
   number: {{$NS_COUNT}}
-  deleteStaleNamespaces: true # delete any old ones from previous failed CL2 runs (We seem to need this, because stuff got pick up from other test namespaces, WaitForRunningPods. Don't know why! It shouldn't work like that.)
-  deleteAutomanagedNamespaces: {{$NAMESPACE_CLEANUP}} # delete at end of test
+  deleteStaleNamespaces: {{$DELETE_STALE_NAMESPACES}} # delete any old ones from previous failed CL2 runs (We seem to need this, because stuff got pick up from other test namespaces, WaitForRunningPods. Don't know why! It shouldn't work like that.)
+  deleteAutomanagedNamespaces: {{$DELETE_AUTOMANAGED_NAMESPACES}} # delete at end of test
   enableExistingNamespaces: false # only use the automanged ones that CL2 createds for us
 
 tuningSets:
