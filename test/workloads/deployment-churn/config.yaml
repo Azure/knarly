@@ -18,6 +18,7 @@ name: deployment-churn
 {{$CLEANUP := DefaultParam .CL2_CLEANUP 1}}
 {{$DELETE_AUTOMANAGED_NAMESPACES := DefaultParam .DELETE_AUTOMANAGED_NAMESPACES true}}
 {{$DELETE_STALE_NAMESPACES := DefaultParam .CL2_DELETE_STALE_NAMESPACES true}}
+{{$TEST_ID := DefaultParam .CL2_TEST_ID ""}}
 {{$NS_PREFIX := DefaultParam .CL2_NS_PREFIX ""}}
 {{$POD_CONTROLLER := DefaultParam .CL2_POD_CONTROLLER "deployment"}}
 # Note on CLEANUP of pods and deployments that we create.
@@ -114,6 +115,7 @@ steps:
       pvcStorageQuantity: {{$PVC_STORAGE_QUANTITY}}
       pvcStorageClass:  {{$PVC_STORAGE_CLASS}}
       podManagementPolicy: {{$POD_MANAGEMENT_POLICY}}
+      testId: {{$TEST_ID}}
 
 ### One or more rounds of churn
 {{range $i := Loop $REPEATS}}
@@ -131,6 +133,7 @@ steps:
       pvcStorageQuantity: {{$PVC_STORAGE_QUANTITY}}
       pvcStorageClass:  {{$PVC_STORAGE_CLASS}}
       podManagementPolicy: {{$POD_MANAGEMENT_POLICY}}
+      testId: {{$TEST_ID}}
 {{end}}
 
 ### cleanup
@@ -150,6 +153,7 @@ steps:
       pvcStorageQuantity: {{$PVC_STORAGE_QUANTITY}}
       pvcStorageClass:  {{$PVC_STORAGE_CLASS}}
       podManagementPolicy: {{$POD_MANAGEMENT_POLICY}}
+      testId: {{$TEST_ID}}
 {{end}}
 
 ### Gather measurements

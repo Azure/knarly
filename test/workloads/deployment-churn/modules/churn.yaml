@@ -47,7 +47,7 @@ steps:
     Method: WaitForRunningPods
     Params:
       desiredPodCount: {{$preDelTargetPodCount}} 
-      labelSelector: test-round in (r{{$previousRoundNum}})  
+      labelSelector: test-round in (r{{$previousRoundNum}}),test-id={{$.testId}} 
       timeout: {{$.timeout}}  
 {{end}}          
 
@@ -76,6 +76,7 @@ steps:
         pvcStorageQuantity: {{$.pvcStorageQuantity}}
         pvcStorageClass:  {{$.pvcStorageClass}}
         podManagementPolicy: {{$.podManagementPolicy}}
+        testId: {{$.testId}} 
 
 - name: end CRUD timer
   measurements:
@@ -98,7 +99,7 @@ steps:
     Method: WaitForRunningPods
     Params:
       desiredPodCount: {{$finalPodCount}} 
-      labelSelector: test-round in (r0, r{{$.roundNumber}})  # since we may carry some over from round 0
+      labelSelector: test-round in (r0, r{{$.roundNumber}}),test-id={{$.testId}}   # since we may carry some over from round 0
       timeout: {{$.timeout}}
 
 - name: end wait timer
