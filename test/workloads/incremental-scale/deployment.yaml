@@ -4,17 +4,20 @@ metadata:
   name: {{.Name}}
   labels:
     test-round: {{$.testRound}} 
+    test-id: {{$.testId}}
 spec: 
   replicas: {{$.replicas}}
   selector:
     matchLabels:
       app: {{.Name}}
       test-round: {{$.testRound}}
+      test-id: {{$.testId}}
   template:
     metadata:
       labels:
         app: {{.Name}}
         test-round: {{$.testRound}}
+        test-id: {{$.testId}}
     spec:    
       containers:
       - name: load-test

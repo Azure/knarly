@@ -3,17 +3,23 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: {{.Name}}
+  labels:
+    #test-round: {{$.testRound}} Forbidden: updates to statefulset spec for fields other than 'replicas', 'template', 'updateStrategy' and 'minReadySeconds' are forbidden
+    test-id: {{$.testId}}
 spec:
   selector:
     matchLabels:
-      app: {{.Name}}
+      #test-round: {{$.testRound}} 
+      test-id: {{$.testId}}
   serviceName: "unused"
   replicas: {{$.replicas}}
-  podManagementPolicy: {{$.podManagementPolicy}}
+  podManagementPolicy: {{$.podManagementPolicy}} #Parallel OrderedReady
   template:
     metadata:
       labels:
         app: {{.Name}}
+        #test-round: {{$.testRound}}
+        test-id: {{$.testId}}
     spec:
        containers:
         - name: load-test

@@ -1,15 +1,17 @@
 name: incremental-scale
 
 # input params (which be default come from override file or CL2... env vars)
-{{$POD_CONTROLLER := DefaultParam .CL2_POD_CONTROLLER "statefulset"}}
+{{$POD_CONTROLLER := DefaultParam .CL2_POD_CONTROLLER "statefulset"}} #statefulset or deployment
 {{$NS_COUNT := DefaultParam .CL2_NS_COUNT 1}} 
-{{$STATEFULSETS_PER_NS := DefaultParam .CL2_STATEFULSETS_PER_NS 1}} 
+{{$INSTANCES_PER_NS := DefaultParam .CL2_INSTANCES_PER_NS 1}} #num of pod-controller instances to create per namespace
+{{$TEST_ID := DefaultParam .CL2_TEST_ID "incremental-scale"}} #default to name of test
+{{$NS_PREFIX := DefaultParam .CL2_NS_PREFIX ""}} #default to empty string (system generated prefix)
 
 {{$TOTAL_SCALE_STEPS := DefaultParam .CL2_TOTAL_SCALE_STEPS 2}} #includes the initial create step
-{{$PODS_PER_SCALE_STEP := DefaultParam .CL2_PODS_PER_SCALE_STEP 500}} #across all statefulsets
+{{$PODS_PER_SCALE_STEP := DefaultParam .CL2_PODS_PER_SCALE_STEP 500}} #summed across all instances
 {{$STEP_DELAY := DefaultParam .CL2_STEP_DELAY "30m"}} # half an hour
 
-{{$DELETE_AUTOMANAGED_NAMESPACES := DefaultParam .DELETE_AUTOMANAGED_NAMESPACES true}}
+{{$DELETE_AUTOMANAGED_NAMESPACES := DefaultParam .CL2_DELETE_AUTOMANAGED_NAMESPACES false}}
 {{$DELETE_STALE_NAMESPACES := DefaultParam .CL2_DELETE_STALE_NAMESPACES true}}
 
 # POD_CONTROLLER == statefulSet params
@@ -18,29 +20,27 @@ name: incremental-scale
 {{$POD_MANAGEMENT_POLICY := DefaultParam .CL2_POD_MANAGEMENT_POLICY "OrderedReady"}}    # 'OrderedReady' for incremental statefulset scale up, 'Parallel' for complete immediate pod creation
 
 # computed params
-{{$numScaleSteps := SubtractInt $TOTAL_SCALE_STEPS 1}}
-{{$totalNumStatefulSets := MultiplyInt $STATEFULSETS_PER_NS $NS_COUNT}}
-{{$replicasPerInstance := DivideFloat $PODS_PER_SCALE_STEP $totalNumStatefulSets}} #TODO test how this behaves when fractional
-{{$totalPodsToCreate := MultiplyInt $TOTAL_SCALE_STEPS (MultiplyInt $totalNumStatefulSets $replicasPerInstance)}} #should equal TOTAL_SCALE_STEPS * PODS_PER_SCALE_STEP but calculated like this so we log the actual value in case of rounding.
-
-{{$burstSize := AddInt $replicasPerInstance 1}}
-
-#configure the tuningset based on the type
-tuningSets:
-- name: TargetCreateLoad
-  steppedLoad:
-    burstSize: {{$burstSize}}
-    stepDelay: {{$STEP_DELAY}} #note this is incorrectly documented (and in core perf-tests tests...) as an int, "number of seconds"
+{{$totalNumInstances := MultiplyInt $INSTANCES_PER_NS $NS_COUNT}}
+{{$replicasPerInstance := DivideFloat $PODS_PER_SCALE_STEP $totalNumInstances}} #TODO test how this behaves when fractional
+{{$totalPodsToCreate := MultiplyInt $TOTAL_SCALE_STEPS (MultiplyInt $totalNumInstances $replicasPerInstance)}} #should equal TOTAL_SCALE_STEPS * PODS_PER_SCALE_STEP but calculated like this so we log the actual value in case of rounding.
 
 namespace:
   number: {{$NS_COUNT}}
+  prefix: {{$NS_PREFIX}}
   deleteStaleNamespaces: {{$DELETE_STALE_NAMESPACES}} # delete any old ones from previous failed CL2 runs (We seem to need this, because stuff got pick up from other test namespaces, WaitForRunningPods. Don't know why! It shouldn't work like that.)
   deleteAutomanagedNamespaces: {{$DELETE_AUTOMANAGED_NAMESPACES}} # delete at end of test
   enableExistingNamespaces: false # only use the automanged ones that CL2 creates for us
 
+#tuningSet to increment each sts by replicasPerInstance, timeLimited to spread the updates across the full period.
+#e.g. for: stepDelay of 1m, replicasPerInstance of 10, and numInstancesPerNs of 6. Every 10 seconds increment a different instance by 10 replicas.
+tuningSets:
+- name: TargetCreateLoad
+  timeLimitedLoad:
+    timeLimit: {{$STEP_DELAY}}
+
 steps:
 #### Log params ###
-- name: Log - creating a total of {{$totalPodsToCreate}} pods. Using {{$NS_COUNT}} namespace(s), each with {{$STATEFULSETS_PER_NS}} {{$POD_CONTROLLER}}s per namespace. Running {{$TOTAL_SCALE_STEPS}} scale-steps total (including initial creation as first scale step), each scale-step will increment the replicas in each {{$POD_CONTROLLER}} by {{$replicasPerInstance}} replicasPerInstance, with a delay between scale-steps of {{$STEP_DELAY}}.
+- name: Log - creating a total of {{$totalPodsToCreate}} pods. Using {{$NS_COUNT}} namespace(s), each with {{$INSTANCES_PER_NS}} {{$POD_CONTROLLER}}s per namespace. Running {{$TOTAL_SCALE_STEPS}} scale-steps total (including initial creation as first scale step), each scale-step will increment the replicas in each {{$POD_CONTROLLER}} by {{$replicasPerInstance}} replicasPerInstance, with a delay between scale-steps of {{$STEP_DELAY}}.
   measurements:
   - Identifier: Dummy
     Method: Sleep
@@ -56,34 +56,23 @@ steps:
        action: start
        label: overall duration  # can't just "declare" a timer, without starting it.
 
-- module:
-    path: /create-module.yaml
-    params:
-      roundNumber: 1
-      desc: Prepare initial set of deployments
-      statefulSetsPerNS: {{$STATEFULSETS_PER_NS}}
-      replicasPerInstance: {{$replicasPerInstance}}
-      nsCount: {{$NS_COUNT}}
-      podController: {{$POD_CONTROLLER}}
-      pvcStorageQuantity: {{$PVC_STORAGE_QUANTITY}}
-      pvcStorageClass:  {{$PVC_STORAGE_CLASS}}
-      podManagementPolicy: {{$POD_MANAGEMENT_POLICY}}
-
-{{range $i := Loop $numScaleSteps}}
-{{$roundNumber := AddInt $i 2}} 
+{{range $i := Loop $TOTAL_SCALE_STEPS}}
+{{$roundNumber := AddInt $i 1}} #start from 1
 {{$newReplicasPerInstance := MultiplyInt $replicasPerInstance $roundNumber}}
 - module:
     path: /scale-module.yaml
     params:
       roundNumber: {{$roundNumber}}
       desc: Scale each {{$POD_CONTROLLER}} to {{$newReplicasPerInstance}} replicas in round {{$roundNumber}}.
-      statefulSetsPerNS: {{$STATEFULSETS_PER_NS}}
+      instancesPerNS: {{$INSTANCES_PER_NS}}
       replicasPerInstance: {{$newReplicasPerInstance}}
       nsCount: {{$NS_COUNT}}
       podController: {{$POD_CONTROLLER}}
       pvcStorageQuantity: {{$PVC_STORAGE_QUANTITY}}
       pvcStorageClass:  {{$PVC_STORAGE_CLASS}}
       podManagementPolicy: {{$POD_MANAGEMENT_POLICY}}
+      testId: {{$TEST_ID}}
+
 {{end}}
 
 ## Gather measurements

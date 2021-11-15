@@ -16,16 +16,18 @@ steps:
   - namespaceRange:
       min: 1
       max: {{.nsCount}}
-    replicasPerNamespace: {{$.statefulSetsPerNS}} 
+    replicasPerNamespace: {{$.instancesPerNS}} 
     tuningSet: TargetCreateLoad
     objectBundle:
     - basename: {{$.podController}}-instance
       objectTemplatePath: {{$.podController}}.yaml
       templateFillMap:
+        testRound: r{{$.roundNumber}}
         replicas: {{$.replicasPerInstance}}
         pvcStorageQuantity: {{$.pvcStorageQuantity}}
         pvcStorageClass:  {{$.pvcStorageClass}}
         podManagementPolicy: {{$.podManagementPolicy}}
+        testId: {{$.testId}} 
 
 - name: end CRUD timer
   measurements:
