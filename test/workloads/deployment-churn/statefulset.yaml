@@ -3,10 +3,14 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: {{.Name}}
+  labels:
+    test-round: {{$.testRound}} 
+    test-id: {{$.testId}}
 spec:
   selector:
     matchLabels:
       test-round: {{$.testRound}} 
+      test-id: {{$.testId}}
   serviceName: "unused"
   replicas: {{$.replicas}}
   podManagementPolicy: {{$.podManagementPolicy}} #Parallel OrderedReady
@@ -15,6 +19,7 @@ spec:
       labels:
         app: {{.Name}}
         test-round: {{$.testRound}}
+        test-id: {{$.testId}}
     spec:
        containers:
         - name: load-test

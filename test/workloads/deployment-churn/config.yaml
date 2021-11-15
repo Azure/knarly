@@ -18,7 +18,7 @@ name: deployment-churn
 {{$CLEANUP := DefaultParam .CL2_CLEANUP 1}}
 {{$DELETE_AUTOMANAGED_NAMESPACES := DefaultParam .DELETE_AUTOMANAGED_NAMESPACES true}}
 {{$DELETE_STALE_NAMESPACES := DefaultParam .CL2_DELETE_STALE_NAMESPACES true}}
-{{$TEST_ID := DefaultParam .CL2_TEST_ID ""}}
+{{$TEST_ID := DefaultParam .CL2_TEST_ID "deployment-churn"}} #default to name of test
 {{$NS_PREFIX := DefaultParam .CL2_NS_PREFIX ""}}
 {{$POD_CONTROLLER := DefaultParam .CL2_POD_CONTROLLER "deployment"}}
 # Note on CLEANUP of pods and deployments that we create.
