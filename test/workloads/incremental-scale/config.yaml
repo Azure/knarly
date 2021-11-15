@@ -11,7 +11,7 @@ name: incremental-scale
 {{$PODS_PER_SCALE_STEP := DefaultParam .CL2_PODS_PER_SCALE_STEP 500}} #summed across all instances
 {{$STEP_DELAY := DefaultParam .CL2_STEP_DELAY "30m"}} # half an hour
 
-{{$DELETE_AUTOMANAGED_NAMESPACES := DefaultParam .CL2_DELETE_AUTOMANAGED_NAMESPACES false}}
+{{$DELETE_AUTOMANAGED_NAMESPACES := DefaultParam .CL2_DELETE_AUTOMANAGED_NAMESPACES true}}
 {{$DELETE_STALE_NAMESPACES := DefaultParam .CL2_DELETE_STALE_NAMESPACES true}}
 
 # POD_CONTROLLER == statefulSet params
@@ -56,22 +56,29 @@ steps:
        action: start
        label: overall duration  # can't just "declare" a timer, without starting it.
 
+#The main scaling loop
 {{range $i := Loop $TOTAL_SCALE_STEPS}}
 {{$roundNumber := AddInt $i 1}} #start from 1
 {{$newReplicasPerInstance := MultiplyInt $replicasPerInstance $roundNumber}}
-- module:
-    path: /scale-module.yaml
-    params:
-      roundNumber: {{$roundNumber}}
-      desc: Scale each {{$POD_CONTROLLER}} to {{$newReplicasPerInstance}} replicas in round {{$roundNumber}}.
-      instancesPerNS: {{$INSTANCES_PER_NS}}
-      replicasPerInstance: {{$newReplicasPerInstance}}
-      nsCount: {{$NS_COUNT}}
-      podController: {{$POD_CONTROLLER}}
-      pvcStorageQuantity: {{$PVC_STORAGE_QUANTITY}}
-      pvcStorageClass:  {{$PVC_STORAGE_CLASS}}
-      podManagementPolicy: {{$POD_MANAGEMENT_POLICY}}
-      testId: {{$TEST_ID}}
+{{$fullRoundName := print "Scale each " $POD_CONTROLLER " to " $newReplicasPerInstance " replicas in round " $roundNumber}}
+
+- name: {{$fullRoundName}}
+  phases:  
+  - namespaceRange:
+      min: 1
+      max: {{$NS_COUNT}}
+    replicasPerNamespace: {{$INSTANCES_PER_NS}} 
+    tuningSet: TargetCreateLoad
+    objectBundle:
+    - basename: {{$POD_CONTROLLER}}-instance
+      objectTemplatePath: {{$POD_CONTROLLER}}.yaml
+      templateFillMap:
+        testRound: r{{$roundNumber}}
+        replicas: {{$newReplicasPerInstance}}
+        pvcStorageQuantity: {{$PVC_STORAGE_QUANTITY}}
+        pvcStorageClass:  {{$PVC_STORAGE_CLASS}}
+        podManagementPolicy: {{$POD_MANAGEMENT_POLICY}}
+        testId: {{$TEST_ID}}
 
 {{end}}
 
