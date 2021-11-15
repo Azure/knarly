@@ -24,6 +24,10 @@ name: incremental-scale
 {{$replicasPerInstance := DivideFloat $PODS_PER_SCALE_STEP $totalNumInstances}} #TODO test how this behaves when fractional
 {{$totalPodsToCreate := MultiplyInt $TOTAL_SCALE_STEPS (MultiplyInt $totalNumInstances $replicasPerInstance)}} #should equal TOTAL_SCALE_STEPS * PODS_PER_SCALE_STEP but calculated like this so we log the actual value in case of rounding.
 
+{{if and (ne $POD_CONTROLLER "deployment") (ne $POD_CONTROLLER "statefulset")}}
+   error: unrecognized value for POD_CONTROLLER $POD_CONTROLLER, supported values are "deployment" and "statefulset"
+{{end}}
+
 namespace:
   number: {{$NS_COUNT}}
   prefix: {{$NS_PREFIX}}
