@@ -26,7 +26,6 @@ require (
 	sigs.k8s.io/cluster-api/test v1.0.2
 	sigs.k8s.io/controller-runtime v0.10.3
 	sigs.k8s.io/kind v0.11.1
-	sigs.k8s.io/kustomize/kustomize/v4 v4.2.0 // indirect
 )
 
 replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.0.2
