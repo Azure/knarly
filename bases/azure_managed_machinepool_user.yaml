@@ -1,0 +1,8 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePool
+metadata:
+  name: nodepool
+spec:
+  mode: User
+  osDiskSizeGB: 30
+  sku: ${AZURE_NODE_MACHINE_TYPE}
