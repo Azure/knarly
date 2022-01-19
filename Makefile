@@ -67,18 +67,18 @@ help:  ## Display this help
 
 .PHONY: $(KUSTOMIZE)
 $(KUSTOMIZE): ## Install kustomize
-	GOBIN=$(HACK_BIN_DIR) go get sigs.k8s.io/kustomize/kustomize/v4@$(KUSTOMIZE_VER)
+	GOBIN=$(HACK_BIN_DIR) go install sigs.k8s.io/kustomize/kustomize/v4@$(KUSTOMIZE_VER)
 
 .PHONY: $(ENVSUBST)
 $(ENVSUBST): ## Install envsubst
-	GOBIN=$(HACK_BIN_DIR) go get github.com/drone/envsubst/v2/cmd/envsubst@$(ENVSUBST_VER)
+	GOBIN=$(HACK_BIN_DIR) go install github.com/drone/envsubst/v2/cmd/envsubst@$(ENVSUBST_VER)
 
 .PHONY: $(GINKGO)
 $(GINKGO): ## Install ginkgo
-	GOBIN=$(HACK_BIN_DIR) go get github.com/onsi/ginkgo/ginkgo@$(GINKGO_VER)
+	GOBIN=$(HACK_BIN_DIR) go install github.com/onsi/ginkgo/ginkgo@$(GINKGO_VER)
 
 $(KIND): ## Install KinD
-	GOBIN=$(HACK_BIN_DIR) go get sigs.k8s.io/kind@$(KIND_VER)
+	GOBIN=$(HACK_BIN_DIR) go install sigs.k8s.io/kind@$(KIND_VER)
 
 $(KUBECTL): ## Build kubectl
 	mkdir -p $(HACK_BIN_DIR)
