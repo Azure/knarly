@@ -69,18 +69,18 @@ help:  ## Display this help
 
 .PHONY: $(KUSTOMIZE)
 $(KUSTOMIZE): ## Install kustomize
-    GOBIN=$(HACK_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/kustomize/kustomize/v4 $(KUSTOMIZE_BIN) $(KUSTOMIZE_VER)
+	GOBIN=$(HACK_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/kustomize/kustomize/v4 $(KUSTOMIZE_BIN) $(KUSTOMIZE_VER)
 
 .PHONY: $(ENVSUBST)
 $(ENVSUBST): ## Install envsubst
-    GOBIN=$(HACK_BIN_DIR) $(GO_INSTALL) github.com/drone/envsubst/v2/cmd/envsubst $(ENVSUBST_BIN) $(ENVSUBST_VER)
+	GOBIN=$(HACK_BIN_DIR) $(GO_INSTALL) github.com/drone/envsubst/v2/cmd/envsubst $(ENVSUBST_BIN) $(ENVSUBST_VER)
 
 .PHONY: $(GINKGO)
 $(GINKGO): ## Install ginkgo
-    GOBIN=$(HACK_BIN_DIR) $(GO_INSTALL) github.com/onsi/ginkgo/ginkgo $(GINKGO_BIN) $(GINKGO_VER)
+	GOBIN=$(HACK_BIN_DIR) $(GO_INSTALL) github.com/onsi/ginkgo/ginkgo $(GINKGO_BIN) $(GINKGO_VER)
 
 $(KIND): ## Install KinD
-    GOBIN=$(HACK_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/kind $(KIND_BIN) $(KIND_VER)
+	GOBIN=$(HACK_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/kind $(KIND_BIN) $(KIND_VER)
 
 $(KUBECTL): ## Build kubectl
 	mkdir -p $(HACK_BIN_DIR)
