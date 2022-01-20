@@ -26,11 +26,13 @@ ROOT_DIR :=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 HACK_DIR := hack
 HACK_BIN_DIR := $(abspath $(HACK_DIR)/bin)
 
+GO_INSTALL = ./scripts/go_install.sh
+
 REGISTRY ?= us.gcr.io/k8s-artifacts-prod/cluster-api-azure
 IMAGE_NAME ?= cluster-api-azure-controller
 CONTROLLER_IMG ?= $(REGISTRY)/$(IMAGE_NAME)
 
-KUSTOMIZE_VER := v4.2.0
+KUSTOMIZE_VER := v4.4.1
 KUSTOMIZE_BIN := kustomize
 KUSTOMIZE := $(HACK_BIN_DIR)/$(KUSTOMIZE_BIN)
 
@@ -42,7 +44,7 @@ KUBECTL_VER := v1.20.4
 KUBECTL_BIN := kubectl
 KUBECTL := $(HACK_BIN_DIR)/$(KUBECTL_BIN)-$(KUBECTL_VER)
 
-GINKGO_VER := v1.16.4
+GINKGO_VER := v1.16.5
 GINKGO_BIN := ginkgo
 GINKGO := $(HACK_BIN_DIR)/$(GINKGO_BIN)
 
@@ -67,18 +69,18 @@ help:  ## Display this help
 
 .PHONY: $(KUSTOMIZE)
 $(KUSTOMIZE): ## Install kustomize
-	GOBIN=$(HACK_BIN_DIR) go install sigs.k8s.io/kustomize/kustomize/v4@$(KUSTOMIZE_VER)
+    GOBIN=$(HACK_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/kustomize/kustomize/v4 $(KUSTOMIZE_BIN) $(KUSTOMIZE_VER)
 
 .PHONY: $(ENVSUBST)
 $(ENVSUBST): ## Install envsubst
-	GOBIN=$(HACK_BIN_DIR) go install github.com/drone/envsubst/v2/cmd/envsubst@$(ENVSUBST_VER)
+    GOBIN=$(HACK_BIN_DIR) $(GO_INSTALL) github.com/drone/envsubst/v2/cmd/envsubst $(ENVSUBST_BIN) $(ENVSUBST_VER)
 
 .PHONY: $(GINKGO)
 $(GINKGO): ## Install ginkgo
-	GOBIN=$(HACK_BIN_DIR) go install github.com/onsi/ginkgo/ginkgo@$(GINKGO_VER)
+    GOBIN=$(HACK_BIN_DIR) $(GO_INSTALL) github.com/onsi/ginkgo/ginkgo $(GINKGO_BIN) $(GINKGO_VER)
 
 $(KIND): ## Install KinD
-	GOBIN=$(HACK_BIN_DIR) go install sigs.k8s.io/kind@$(KIND_VER)
+    GOBIN=$(HACK_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/kind $(KIND_BIN) $(KIND_VER)
 
 $(KUBECTL): ## Build kubectl
 	mkdir -p $(HACK_BIN_DIR)
