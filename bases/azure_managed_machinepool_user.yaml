@@ -2,6 +2,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
   name: nodepool
+  namespace: default
 spec:
   mode: User
   osDiskSizeGB: 30
