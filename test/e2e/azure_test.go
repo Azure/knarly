@@ -33,12 +33,13 @@ var _ = Describe("Workload cluster creation", func() {
 		additionalCleanup     func()
 		specTimes             = map[string]time.Time{}
 		podChurnRateSLOTarget = specs.PodChurnTestConfig{
+			Namespaces:          2,
 			Cleanup:             1,
-			NumChurnIterations:  1,
-			PodStartTimeoutMins: 20,
-			PodsPerNode:         20,
-			PodChurnRate:        75,
-			PodsPerDeployment:   64,
+			NumChurnIterations:  4,
+			PodStartTimeoutMins: 25,
+			PodsPerNode:         10,
+			PodChurnRate:        50,
+			PodsPerDeployment:   32,
 		}
 	)
 
@@ -123,7 +124,7 @@ var _ = Describe("Workload cluster creation", func() {
 				ClusterName:              clusterName,
 				KubernetesVersion:        e2eConfig.GetVariable(utils.AKSKubernetesVersion),
 				ControlPlaneMachineCount: pointer.Int64Ptr(1),
-				WorkerMachineCount:       pointer.Int64Ptr(3),
+				WorkerMachineCount:       pointer.Int64Ptr(100),
 			},
 			WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 			WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),

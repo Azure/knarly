@@ -5,6 +5,9 @@ resources:
   - ../../../bases/azure_managed_control_plane.yaml
   - nodepool1
   - nodepool2
+  - nodepool3
+  - nodepool4
+  - nodepool5
 patchesStrategicMerge:
   - infra_ref_patch.yaml
   - ../../identities/azure_managed_control_plane_patch.yaml
