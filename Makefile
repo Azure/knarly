@@ -61,7 +61,7 @@ E2E_CONF_FILE ?= $(ROOT_DIR)/test/e2e/config/azure-dev.yaml
 E2E_CONF_FILE_ENVSUBST := $(ROOT_DIR)/test/e2e/config/azure-dev-envsubst.yaml
 SKIP_CLEANUP ?= false
 SKIP_CREATE_MGMT_CLUSTER ?= false
-TAG ?= 1.1.0
+TAG ?= 1.1.1
 ARCH ?= amd64
 
 help:  ## Display this help

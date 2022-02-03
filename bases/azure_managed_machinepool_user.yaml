@@ -5,5 +5,4 @@ metadata:
   namespace: default
 spec:
   mode: User
-  osDiskSizeGB: 30
   sku: ${AZURE_NODE_MACHINE_TYPE}

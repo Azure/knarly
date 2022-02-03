@@ -4,9 +4,10 @@ metadata:
   labels:
     cni: ${CLUSTER_NAME}-calico
   name: ${CLUSTER_NAME}
+  namespace: default
 spec:
   clusterNetwork:
-    pods:
+    services:
       cidrBlocks:
       - 192.168.0.0/16
   controlPlaneRef:
