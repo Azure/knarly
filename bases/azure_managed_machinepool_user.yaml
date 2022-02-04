@@ -6,3 +6,5 @@ metadata:
 spec:
   mode: User
   sku: ${AZURE_NODE_MACHINE_TYPE}
+  maxPods: 12
+  osDiskType: Ephemeral

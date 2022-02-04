@@ -61,7 +61,9 @@ metadata:
   name: nodepool1
   namespace: default
 spec:
+  maxPods: 12
   mode: System
+  osDiskType: Ephemeral
   sku: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
@@ -90,7 +92,9 @@ metadata:
   name: nodepool2
   namespace: default
 spec:
+  maxPods: 12
   mode: User
+  osDiskType: Ephemeral
   sku: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
@@ -119,7 +123,9 @@ metadata:
   name: nodepool3
   namespace: default
 spec:
+  maxPods: 12
   mode: User
+  osDiskType: Ephemeral
   sku: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
@@ -148,7 +154,9 @@ metadata:
   name: nodepool4
   namespace: default
 spec:
+  maxPods: 12
   mode: User
+  osDiskType: Ephemeral
   sku: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
@@ -177,7 +185,9 @@ metadata:
   name: nodepool5
   namespace: default
 spec:
+  maxPods: 12
   mode: User
+  osDiskType: Ephemeral
   sku: ${AZURE_NODE_MACHINE_TYPE}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
