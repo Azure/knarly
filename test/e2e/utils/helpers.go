@@ -178,6 +178,7 @@ type CleanupInput struct {
 	Cluster           *clusterv1.Cluster
 	IntervalsGetter   func(spec, key string) []interface{}
 	SkipCleanup       bool
+	GetLogs           bool
 	AdditionalCleanup func()
 	E2eConfig         *clusterctl.E2EConfig
 }
@@ -188,20 +189,22 @@ func DumpSpecResourcesAndCleanup(ctx context.Context, input CleanupInput) {
 		redactLogs(input.E2eConfig)
 	}()
 
-	if input.Cluster == nil {
-		By("Unable to dump workload cluster logs as the cluster is nil")
-	} else {
-		Byf("Dumping logs from the %q workload cluster", input.Cluster.Name)
-		input.ClusterProxy.CollectWorkloadClusterLogs(ctx, input.Cluster.Namespace, input.Cluster.Name, filepath.Join(input.ArtifactFolder, "clusters", input.Cluster.Name))
-	}
+	if input.GetLogs {
+		if input.Cluster == nil {
+			By("Unable to dump workload cluster logs as the cluster is nil")
+		} else {
+			Byf("Dumping logs from the %q workload cluster", input.Cluster.Name)
+			input.ClusterProxy.CollectWorkloadClusterLogs(ctx, input.Cluster.Namespace, input.Cluster.Name, filepath.Join(input.ArtifactFolder, "clusters", input.Cluster.Name))
+		}
 
-	Byf("Dumping all the Cluster API resources in the %q namespace", input.Namespace.Name)
-	// Dump all Cluster API related resources to artifacts before deleting them.
-	framework.DumpAllResources(ctx, framework.DumpAllResourcesInput{
-		Lister:    input.ClusterProxy.GetClient(),
-		Namespace: input.Namespace.Name,
-		LogPath:   filepath.Join(input.ArtifactFolder, "clusters", input.ClusterProxy.GetName(), "resources"),
-	})
+		Byf("Dumping all the Cluster API resources in the %q namespace", input.Namespace.Name)
+		// Dump all Cluster API related resources to artifacts before deleting them.
+		framework.DumpAllResources(ctx, framework.DumpAllResourcesInput{
+			Lister:    input.ClusterProxy.GetClient(),
+			Namespace: input.Namespace.Name,
+			LogPath:   filepath.Join(input.ArtifactFolder, "clusters", input.ClusterProxy.GetName(), "resources"),
+		})
+	}
 
 	if input.SkipCleanup {
 		return
