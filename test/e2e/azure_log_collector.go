@@ -29,11 +29,11 @@ import (
 	"github.com/azure/knarly/test/e2e/utils"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
+	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
+	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -142,7 +142,7 @@ func collectLogsFromNode(ctx context.Context, managementClusterClient client.Cli
 	return kinderrors.AggregateConcurrent(linuxLogs(execToPathFn))
 }
 
-func isAzureMachineWindows(am *v1alpha4.AzureMachine) bool {
+func isAzureMachineWindows(am *infrav1.AzureMachine) bool {
 	return am.Spec.OSDisk.OSType == azure.WindowsOS
 }
 
@@ -164,13 +164,13 @@ func getHostname(m *clusterv1.Machine, isWindows bool) string {
 	return hostname
 }
 
-func getAzureMachine(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine) (*v1alpha4.AzureMachine, error) {
+func getAzureMachine(ctx context.Context, managementClusterClient client.Client, m *clusterv1.Machine) (*infrav1.AzureMachine, error) {
 	key := client.ObjectKey{
 		Namespace: m.Spec.InfrastructureRef.Namespace,
 		Name:      m.Spec.InfrastructureRef.Name,
 	}
 
-	azMachine := &v1alpha4.AzureMachine{}
+	azMachine := &infrav1.AzureMachine{}
 	err := managementClusterClient.Get(ctx, key, azMachine)
 	return azMachine, err
 }
@@ -330,7 +330,7 @@ func windowsNetworkLogs(execToPathFn func(outputFileName string, command string,
 }
 
 // collectVMBootLog collects boot logs of the vm by using azure boot diagnostics.
-func collectVMBootLog(ctx context.Context, am *v1alpha4.AzureMachine, outputPath string) error {
+func collectVMBootLog(ctx context.Context, am *infrav1.AzureMachine, outputPath string) error {
 	utils.Logf("INFO: Collecting boot logs for AzureMachine %s\n", am.GetName())
 
 	resourceId := strings.TrimPrefix(*am.Spec.ProviderID, azure.ProviderIDPrefix)

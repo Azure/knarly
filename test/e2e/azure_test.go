@@ -33,12 +33,13 @@ var _ = Describe("Workload cluster creation", func() {
 		additionalCleanup     func()
 		specTimes             = map[string]time.Time{}
 		podChurnRateSLOTarget = specs.PodChurnTestConfig{
+			Namespaces:          2,
 			Cleanup:             1,
-			NumChurnIterations:  1,
-			PodStartTimeoutMins: 20,
-			PodsPerNode:         20,
-			PodChurnRate:        75,
-			PodsPerDeployment:   64,
+			NumChurnIterations:  4,
+			PodStartTimeoutMins: 25,
+			PodsPerNode:         10,
+			PodChurnRate:        50,
+			PodsPerDeployment:   32,
 		}
 	)
 
@@ -98,6 +99,7 @@ var _ = Describe("Workload cluster creation", func() {
 			CancelWatches:     cancelWatches,
 			IntervalsGetter:   e2eConfig.GetIntervals,
 			SkipCleanup:       skipCleanup,
+			GetLogs:           getLogs,
 			AdditionalCleanup: additionalCleanup,
 			ArtifactFolder:    artifactFolder,
 			E2eConfig:         e2eConfig,
@@ -107,44 +109,6 @@ var _ = Describe("Workload cluster creation", func() {
 		Expect(os.Unsetenv(utils.AzureVNetName)).NotTo(HaveOccurred())
 
 		utils.LogCheckpoint(specTimes)
-	})
-
-	It("With the default flavor", func() {
-		clusterName = utils.GetClusterName(clusterNamePrefix, "default")
-		clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
-			ClusterProxy: bootstrapClusterProxy,
-			ConfigCluster: clusterctl.ConfigClusterInput{
-				LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
-				ClusterctlConfigPath:     clusterctlConfigPath,
-				KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
-				InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
-				Flavor:                   "default",
-				Namespace:                namespace.Name,
-				ClusterName:              clusterName,
-				KubernetesVersion:        e2eConfig.GetVariable(capi_e2e.KubernetesVersion),
-				ControlPlaneMachineCount: pointer.Int64Ptr(3),
-				WorkerMachineCount:       pointer.Int64Ptr(20),
-			},
-			WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
-			WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
-			WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
-		}, result)
-
-		Context("Listing Namespaces in workload cluster", func() {
-			specs.ListNamespaces(ctx, specs.ClusterTestInput{
-				BootstrapClusterProxy: bootstrapClusterProxy,
-				Cluster:               result.Cluster,
-			})
-		})
-
-		Context("Running pod churn tests against workload cluster", func() {
-			specs.RunPodChurnTest(ctx,
-				specs.ClusterTestInput{
-					BootstrapClusterProxy: bootstrapClusterProxy,
-					Cluster:               result.Cluster,
-				},
-				podChurnRateSLOTarget)
-		})
 	})
 
 	It("With the aks flavor", func() {
@@ -161,7 +125,7 @@ var _ = Describe("Workload cluster creation", func() {
 				ClusterName:              clusterName,
 				KubernetesVersion:        e2eConfig.GetVariable(utils.AKSKubernetesVersion),
 				ControlPlaneMachineCount: pointer.Int64Ptr(1),
-				WorkerMachineCount:       pointer.Int64Ptr(20),
+				WorkerMachineCount:       pointer.Int64Ptr(10),
 			},
 			WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 			WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),

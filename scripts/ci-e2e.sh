@@ -37,7 +37,7 @@ get_random_region() {
     echo "${REGIONS[${RANDOM} % ${#REGIONS[@]}]}"
 }
 
-export TAG="${TAG:-v0.5.1}"
+export TAG="${TAG:-v1.1.1}"
 export GINKGO_NODES=3
 
 # TODO: remove these variables once Calico 3.20 fixes https://github.com/kubernetes-sigs/cluster-api-provider-azure/issues/1448

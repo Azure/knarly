@@ -11,7 +11,7 @@ import (
 	"github.com/azure/knarly/test/e2e/utils"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 )
 
@@ -22,6 +22,8 @@ type (
 	}
 
 	PodChurnTestConfig struct {
+		// Namespaces indicates the number of namespaces to use for all pods
+		Namespaces int
 		// Cleanup indicates whether or not to explicitly cleanup pods after test, 0=no, 1=yes
 		Cleanup int
 		// NumChurnIterations is the number of pod churn lifecycles to perform during the test
@@ -61,7 +63,7 @@ func RunPodChurnTest(ctx context.Context, input ClusterTestInput, testConfig Pod
 	cwdSlice := strings.Split(cwd, "/")
 	gitRootFilepath := strings.Join(cwdSlice[:len(cwdSlice)-2], "/")
 	clusterloader2Command := exec.Command("perf-tests/clusterloader2/cmd/clusterloader", fmt.Sprintf("--testconfig=%s/test/workloads/deployment-churn/config.yaml", gitRootFilepath), "--provider=aks", fmt.Sprintf("--kubeconfig=%s", kubeConfigPath), "--v=2", "--enable-exec-service=false")
-	clusterloader2Command.Env = append(os.Environ(), fmt.Sprintf("CL2_NS_COUNT=%d", 15),
+	clusterloader2Command.Env = append(os.Environ(), fmt.Sprintf("CL2_NS_COUNT=%d", testConfig.Namespaces),
 		fmt.Sprintf("CL2_CLEANUP=%d", testConfig.Cleanup),
 		fmt.Sprintf("CL2_REPEATS=%d", testConfig.NumChurnIterations),
 		fmt.Sprintf("CL2_POD_START_TIMEOUT_MINS=%d", testConfig.PodStartTimeoutMins),
@@ -69,7 +71,8 @@ func RunPodChurnTest(ctx context.Context, input ClusterTestInput, testConfig Pod
 		fmt.Sprintf("CL2_TARGET_POD_CHURN=%d", testConfig.PodChurnRate),
 		fmt.Sprintf("CL2_PODS_PER_DEPLOYMENT=%d", testConfig.PodsPerDeployment))
 	clusterloader2Command.Dir = gitRootFilepath
+	fmt.Printf("clusterloader2Command: %#v\n", clusterloader2Command)
 	out, err := clusterloader2Command.CombinedOutput()
-	Expect(err).ToNot(HaveOccurred())
 	utils.Logf("%s\n", out)
+	Expect(err).ToNot(HaveOccurred())
 }

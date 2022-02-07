@@ -26,11 +26,13 @@ ROOT_DIR :=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 HACK_DIR := hack
 HACK_BIN_DIR := $(abspath $(HACK_DIR)/bin)
 
+GO_INSTALL = ./scripts/go_install.sh
+
 REGISTRY ?= us.gcr.io/k8s-artifacts-prod/cluster-api-azure
 IMAGE_NAME ?= cluster-api-azure-controller
 CONTROLLER_IMG ?= $(REGISTRY)/$(IMAGE_NAME)
 
-KUSTOMIZE_VER := v4.2.0
+KUSTOMIZE_VER := v4.4.1
 KUSTOMIZE_BIN := kustomize
 KUSTOMIZE := $(HACK_BIN_DIR)/$(KUSTOMIZE_BIN)
 
@@ -42,7 +44,7 @@ KUBECTL_VER := v1.20.4
 KUBECTL_BIN := kubectl
 KUBECTL := $(HACK_BIN_DIR)/$(KUBECTL_BIN)-$(KUBECTL_VER)
 
-GINKGO_VER := v1.16.4
+GINKGO_VER := v1.16.5
 GINKGO_BIN := ginkgo
 GINKGO := $(HACK_BIN_DIR)/$(GINKGO_BIN)
 
@@ -58,8 +60,9 @@ ARTIFACTS ?= $(ROOT_DIR)/_artifacts
 E2E_CONF_FILE ?= $(ROOT_DIR)/test/e2e/config/azure-dev.yaml
 E2E_CONF_FILE_ENVSUBST := $(ROOT_DIR)/test/e2e/config/azure-dev-envsubst.yaml
 SKIP_CLEANUP ?= false
+GET_LOGS ?= false
 SKIP_CREATE_MGMT_CLUSTER ?= false
-TAG ?= 0.5.1
+TAG ?= 1.1.1
 ARCH ?= amd64
 
 help:  ## Display this help
@@ -67,18 +70,18 @@ help:  ## Display this help
 
 .PHONY: $(KUSTOMIZE)
 $(KUSTOMIZE): ## Install kustomize
-	GOBIN=$(HACK_BIN_DIR) go get sigs.k8s.io/kustomize/kustomize/v4@$(KUSTOMIZE_VER)
+	GOBIN=$(HACK_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/kustomize/kustomize/v4 $(KUSTOMIZE_BIN) $(KUSTOMIZE_VER)
 
 .PHONY: $(ENVSUBST)
 $(ENVSUBST): ## Install envsubst
-	GOBIN=$(HACK_BIN_DIR) go get github.com/drone/envsubst/v2/cmd/envsubst@$(ENVSUBST_VER)
+	GOBIN=$(HACK_BIN_DIR) $(GO_INSTALL) github.com/drone/envsubst/v2/cmd/envsubst $(ENVSUBST_BIN) $(ENVSUBST_VER)
 
 .PHONY: $(GINKGO)
 $(GINKGO): ## Install ginkgo
-	GOBIN=$(HACK_BIN_DIR) go get github.com/onsi/ginkgo/ginkgo@$(GINKGO_VER)
+	GOBIN=$(HACK_BIN_DIR) $(GO_INSTALL) github.com/onsi/ginkgo/ginkgo $(GINKGO_BIN) $(GINKGO_VER)
 
 $(KIND): ## Install KinD
-	GOBIN=$(HACK_BIN_DIR) go get sigs.k8s.io/kind@$(KIND_VER)
+	GOBIN=$(HACK_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/kind $(KIND_BIN) $(KIND_VER)
 
 $(KUBECTL): ## Build kubectl
 	mkdir -p $(HACK_BIN_DIR)
@@ -97,7 +100,7 @@ test-e2e-run: generate $(ENVSUBST) $(KUBECTL) $(GINKGO) $(KIND) ## Run e2e tests
     $(GINKGO) -v -trace -tags=e2e -focus="$(GINKGO_FOCUS)" -skip="$(GINKGO_SKIP)" -nodes=$(GINKGO_NODES) --noColor=$(GINKGO_NOCOLOR) $(GINKGO_ARGS) ./test/e2e -- \
     	-e2e.artifacts-folder="$(ARTIFACTS)" \
     	-e2e.config="$(E2E_CONF_FILE_ENVSUBST)" \
-    	-e2e.skip-resource-cleanup=$(SKIP_CLEANUP) -e2e.use-existing-cluster=$(SKIP_CREATE_MGMT_CLUSTER) $(E2E_ARGS)
+    	-e2e.skip-resource-cleanup=$(SKIP_CLEANUP) -e2e.get-logs=$(GET_LOGS) -e2e.use-existing-cluster=$(SKIP_CREATE_MGMT_CLUSTER) $(E2E_ARGS)
 
 .PHONY: test-e2e
 test-e2e: ## Run e2e tests

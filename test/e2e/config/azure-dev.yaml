@@ -8,8 +8,8 @@ providers:
   - name: cluster-api
     type: CoreProvider
     versions:
-      - name: v0.4.0
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.0/core-components.yaml
+      - name: v1.1.0
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.1.0-beta.1/core-components.yaml
         type: url
         files:
           - sourcePath: "../data/shared/metadata.yaml"
@@ -21,8 +21,8 @@ providers:
   - name: kubeadm
     type: BootstrapProvider
     versions:
-      - name: v0.4.0
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.0/bootstrap-components.yaml
+      - name: v1.1.0
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.1.0-beta.1/bootstrap-components.yaml
         type: url
         files:
           - sourcePath: "../data/shared/metadata.yaml"
@@ -34,8 +34,8 @@ providers:
   - name: kubeadm
     type: ControlPlaneProvider
     versions:
-      - name: v0.4.0
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.0/control-plane-components.yaml
+      - name: v1.1.0
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.1.0-beta.1/control-plane-components.yaml
         type: url
         files:
           - sourcePath: "../data/shared/metadata.yaml"
@@ -47,8 +47,8 @@ providers:
   - name: azure
     type: InfrastructureProvider
     versions:
-      - name: v0.5.1
-        value: https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/v0.5.1/infrastructure-components.yaml
+      - name: v1.1.1
+        value: https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/v1.1.1/infrastructure-components.yaml
         type: url
         files:
           - sourcePath: "../data/shared/infra_metadata.yaml"
@@ -65,11 +65,8 @@ providers:
         targetName: "cluster-template-aks.yaml"
 
 variables:
-  KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.21.3}"
-  # using a different version for windows because of an issue on azure cloud provider
-  # that only affects windows and external load balancer
-  # https://github.com/kubernetes-sigs/cloud-provider-azure/issues/706
-  AKS_KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.21.2}"
+  KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.21.7}"
+  AKS_KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.21.7}"
   CNI: "${PWD}/overlays/calico/calico.yaml"
   REDACT_LOG_SCRIPT: "${PWD}/hack/log/redact.sh"
   EXP_AKS: "true"
