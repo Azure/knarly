@@ -41,6 +41,24 @@ var _ = Describe("Workload cluster creation", func() {
 			PodChurnRate:        50,
 			PodsPerDeployment:   32,
 		}
+		statefulSetAzureFileChurnRateSLOTarget = specs.StatefulSetTestConfig{
+			Namespaces:            1,
+			InstancesPerNamespace: 5,
+			TotalScaleSteps:       4,
+			StepDelayMinutes:      10,
+			PvcStorageClass:       "azurefile-csi",
+			PvcStorageQuantity:    "8Gi",
+			PodManagementPolicy:   "Parallel",
+		}
+		statefulSetAzureDiskChurnRateSLOTarget = specs.StatefulSetTestConfig{
+			Namespaces:            1,
+			InstancesPerNamespace: 5,
+			TotalScaleSteps:       4,
+			StepDelayMinutes:      10,
+			PvcStorageClass:       "azuredisk-csi",
+			PvcStorageQuantity:    "8Gi",
+			PodManagementPolicy:   "Parallel",
+		}
 	)
 
 	BeforeEach(func() {
@@ -150,6 +168,24 @@ var _ = Describe("Workload cluster creation", func() {
 					Cluster:               result.Cluster,
 				},
 				podChurnRateSLOTarget)
+		})
+
+		Context("Running statefulset azurefile-csi churn tests against workload cluster", func() {
+			specs.RunStatefulSetTest(ctx,
+				specs.ClusterTestInput{
+					BootstrapClusterProxy: bootstrapClusterProxy,
+					Cluster:               result.Cluster,
+				},
+				statefulSetAzureFileChurnRateSLOTarget)
+		})
+
+		Context("Running statefulset azuredisk-csi churn tests against workload cluster", func() {
+			specs.RunStatefulSetTest(ctx,
+				specs.ClusterTestInput{
+					BootstrapClusterProxy: bootstrapClusterProxy,
+					Cluster:               result.Cluster,
+				},
+				statefulSetAzureDiskChurnRateSLOTarget)
 		})
 	})
 
