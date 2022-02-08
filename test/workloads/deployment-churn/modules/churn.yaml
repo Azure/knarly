@@ -6,7 +6,6 @@
 
 # TODO: tidy usage of $.field vs .field (for accessing data passed in from config.yaml).  Since we have no loops here, and so
 # no new scopes defined, both should be equivalent - so it would be cleanest to standardize on one, probably the one without the $
-
 {{$previousRoundNum := SubtractInt $.roundNumber 1}}
 {{$fullRoundName := print $.desc " (rnd " $.roundNumber ")"}}
 # compute a slightly lower replicas per NS number, to represent the level we want to "pre-delete" to
@@ -40,15 +39,15 @@ steps:
     replicasPerNamespace: {{$preDelTargetOldReplicas}}  # set target of having slightly fewer pods than normal, from the previous round
     tuningSet: TargetDeleteQps  # (reference to tuning set from containing file)
     objectBundle:
-    - basename: deployment-rnd-{{$previousRoundNum}}-instance  # delete the previous set
-      objectTemplatePath: "deployment.yaml"
+    - basename: {{$.podController}}-rnd-{{$previousRoundNum}}-instance  # delete the previous set
+      objectTemplatePath: {{$.podController}}.yaml
 - name: wait for pre-deletion  # wait to make sure the pre-deletion really has worked
   measurements:
   - Identifier: WaitForRunningPods 
     Method: WaitForRunningPods
     Params:
       desiredPodCount: {{$preDelTargetPodCount}} 
-      labelSelector: test-round in (r{{$previousRoundNum}})  
+      labelSelector: test-round in (r{{$previousRoundNum}}),test-id={{$.testId}} 
       timeout: {{$.timeout}}  
 {{end}}          
 
@@ -61,19 +60,23 @@ steps:
     replicasPerNamespace: {{$.oldReplicasAfterDeletion}}
     tuningSet: TargetDeleteQps  # (reference to tuning set from containing file)
     objectBundle:
-    - basename: deployment-rnd-{{$previousRoundNum}}-instance  # delete the previous set
-      objectTemplatePath: "deployment.yaml"  
+    - basename: {{$.podController}}-rnd-{{$previousRoundNum}}-instance  # delete the previous set
+      objectTemplatePath: {{$.podController}}.yaml
   - namespaceRange:
       min: 1
       max: {{.nsCount}}
     replicasPerNamespace: {{$.newReplicas}} 
     tuningSet: TargetCreateQps # (reference to tuning set from containing file)
     objectBundle:
-    - basename: deployment-rnd-{{$.roundNumber}}-instance  # create the new set
-      objectTemplatePath: "deployment.yaml"
+    - basename: {{$.podController}}-rnd-{{$.roundNumber}}-instance  # create the new set
+      objectTemplatePath: {{$.podController}}.yaml
       templateFillMap:
         testRound: r{{$.roundNumber}}
         replicas: {{$.podsPerDeployment}}
+        pvcStorageQuantity: {{$.pvcStorageQuantity}}
+        pvcStorageClass:  {{$.pvcStorageClass}}
+        podManagementPolicy: {{$.podManagementPolicy}}
+        testId: {{$.testId}} 
 
 - name: end CRUD timer
   measurements:
@@ -96,7 +99,7 @@ steps:
     Method: WaitForRunningPods
     Params:
       desiredPodCount: {{$finalPodCount}} 
-      labelSelector: test-round in (r0, r{{$.roundNumber}})  # since we may carry some over from round 0
+      labelSelector: test-round in (r0, r{{$.roundNumber}}),test-id={{$.testId}}   # since we may carry some over from round 0
       timeout: {{$.timeout}}
 
 - name: end wait timer

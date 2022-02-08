@@ -16,11 +16,21 @@ name: deployment-churn
 {{$CHURN_FRACTION := DefaultParam .CL2_CHURN_FRACTION 1.0}}  # Set below 1 for faster churn phase, IFF cleanup is set to 0
 {{$REPEATS := DefaultParam .CL2_REPEATS 1}}  # How many times to repeat the churn phase.  Set to non-zero value for longer-running tests
 {{$CLEANUP := DefaultParam .CL2_CLEANUP 1}}
+{{$DELETE_AUTOMANAGED_NAMESPACES := DefaultParam .CL2_DELETE_AUTOMANAGED_NAMESPACES true}}
+{{$DELETE_STALE_NAMESPACES := DefaultParam .CL2_DELETE_STALE_NAMESPACES true}}
+{{$TEST_ID := DefaultParam .CL2_TEST_ID "deployment-churn"}} #default to name of test
+{{$NS_PREFIX := DefaultParam .CL2_NS_PREFIX ""}}
+{{$POD_CONTROLLER := DefaultParam .CL2_POD_CONTROLLER "deployment"}}
 # Note on CLEANUP of pods and deployments that we create.
 # By default we do clean them up explicitly, because by default letting them just get deleted with the namespace is slow.
 # However, if delete-collection-workers has been set to a highish value (e.g. 250) in the API server params, then
 # there is no need for us to delete them explicitly. They'l be deleted quickly when this test deletes its namespace.
 # So, if you have set that parameter in your API server, then set the CL2_CLEANUP parameter to 0
+
+# POD_CONTROLLER == statefulSet params
+{{$PVC_STORAGE_CLASS := DefaultParam .CL2_PVC_STORAGE_CLASS "default"}} # azurefile-csi, azurefile-csi-premium, default ( =managed-csi ), managed-csi-premium
+{{$PVC_STORAGE_QUANTITY := DefaultParam .CL2_PVC_STORAGE_QUANTITY "8Gi"}}    #must be > 100Gi for '-premium' storage classes
+{{$POD_MANAGEMENT_POLICY := DefaultParam .CL2_POD_MANAGEMENT_POLICY "OrderedReady"}}    # 'OrderedReady' for incremental statefulset scale up, 'Parallel' for complete immediate pod creation
 
 # computed params
 {{$desiredConcurrentPods := MultiplyInt $NODE_COUNT $ACTIVE_PODS_PER_NODE}}  #Total number of active pods for cluster
@@ -38,6 +48,7 @@ name: deployment-churn
 
 {{$podStartTimeout := print $POD_START_TIMEOUT_MINS "m"}}
 
+# validation
 {{if and (ne $CLEANUP 0) (ne $CHURN_FRACTION 1.0)}}
    # there is nothing actually called error:.  The next line will force a compliation error. Please read what it says, if you get the error
    error: when using explicit cleanup, churn fraction must be 1.0 # otherwise the cleanup doesn't work
@@ -48,11 +59,17 @@ name: deployment-churn
    error: when using more than 1 repeat, churn fraction must be 1.0 # otherwise our churn code doesn't work properly, and there's no point anywany, because the whole point of $REPEATS is longer test, and the whole point of Churn Fraction < 1 is shorter tests
 {{end}}
 
+{{if and (ne $POD_CONTROLLER "deployment") (ne $POD_CONTROLLER "statefulset")}}
+   error: unrecognized value for POD_CONTROLLER $POD_CONTROLLER, supported values are "deployment" and "statefulset"
+{{end}}
+
+
 namespace:
   number: {{$NS_COUNT}}
-  deleteStaleNamespaces: true # delete any old ones from previous failed CL2 runs (We seem to need this, because stuff got pick up from other test namespaces, WaitForRunningPods. Don't know why! It shouldn't work like that.)
-  deleteAutomanagedNamespaces: true # delete at end of test
-  enableExistingNamespaces: false # only use the automanged ones that CL2 creates for us
+  prefix: {{$NS_PREFIX}}
+  deleteStaleNamespaces: {{$DELETE_STALE_NAMESPACES}} # delete any old ones from previous failed CL2 runs (We seem to need this, because stuff got pick up from other test namespaces, WaitForRunningPods. Don't know why! It shouldn't work like that.)
+  deleteAutomanagedNamespaces: {{$DELETE_AUTOMANAGED_NAMESPACES}} # delete at end of test
+  enableExistingNamespaces: false # only use the automanged ones that CL2 createds for us
 
 tuningSets:
 - name: TargetCreateQps
@@ -66,7 +83,7 @@ steps:
 
 #### Log params ###
 # Can't find a log action, but the above name should function like a log, to let us see the computeed sleep seconds
-- name: Log - deployment creations {{$targetDeploymentCreationsPerSecond}}/s, pods per deployment {{$PODS_PER_DEPLOYMENT}}, deployments to create/churn per namespace {{$concurrentDeploymentsPerNS}}/{{$deploymentsToRecreatePerNS}}, current/target nodes {{$.Nodes}}/{{$NODE_COUNT}}, number of namespaces {{$NS_COUNT}}, expected seconds in startup/one churn phase {{$expectedSecondsInStartupPhase}}/{{$expectedSecondsInChurnPhase}}, num churn phases {{$REPEATS}}, pod start timeout {{$podStartTimeout}}
+- name: Log - {{$POD_CONTROLLER}} creations {{$targetDeploymentCreationsPerSecond}}/s, pods per deployment {{$PODS_PER_DEPLOYMENT}}, deployments to create/churn per namespace {{$concurrentDeploymentsPerNS}}/{{$deploymentsToRecreatePerNS}}, current/target nodes {{$.Nodes}}/{{$NODE_COUNT}}, number of namespaces {{$NS_COUNT}}, expected seconds in startup/one churn phase {{$expectedSecondsInStartupPhase}}/{{$expectedSecondsInChurnPhase}}, num churn phases {{$REPEATS}}, pod start timeout {{$podStartTimeout}}
   measurements:
   - Identifier: Dummy
     Method: Sleep
@@ -94,6 +111,11 @@ steps:
       podsPerDeployment: {{$PODS_PER_DEPLOYMENT}}
       timeout: {{$podStartTimeout}}
       nsCount: {{$NS_COUNT}}
+      podController: {{$POD_CONTROLLER}} 
+      pvcStorageQuantity: {{$PVC_STORAGE_QUANTITY}}
+      pvcStorageClass:  {{$PVC_STORAGE_CLASS}}
+      podManagementPolicy: {{$POD_MANAGEMENT_POLICY}}
+      testId: {{$TEST_ID}}
 
 ### One or more rounds of churn
 {{range $i := Loop $REPEATS}}
@@ -107,6 +129,11 @@ steps:
       podsPerDeployment: {{$PODS_PER_DEPLOYMENT}}
       timeout: {{$podStartTimeout}}
       nsCount: {{$NS_COUNT}}
+      podController: {{$POD_CONTROLLER}}
+      pvcStorageQuantity: {{$PVC_STORAGE_QUANTITY}}
+      pvcStorageClass:  {{$PVC_STORAGE_CLASS}}
+      podManagementPolicy: {{$POD_MANAGEMENT_POLICY}}
+      testId: {{$TEST_ID}}
 {{end}}
 
 ### cleanup
@@ -122,6 +149,11 @@ steps:
       totalPods: 0
       timeout: {{$podStartTimeout}}
       nsCount: {{$NS_COUNT}}
+      podController: {{$POD_CONTROLLER}}
+      pvcStorageQuantity: {{$PVC_STORAGE_QUANTITY}}
+      pvcStorageClass:  {{$PVC_STORAGE_CLASS}}
+      podManagementPolicy: {{$POD_MANAGEMENT_POLICY}}
+      testId: {{$TEST_ID}}
 {{end}}
 
 ### Gather measurements
