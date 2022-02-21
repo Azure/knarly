@@ -5,6 +5,9 @@ name: deployment-churn
 # quite chunky. E.g. if it makes a deployment with 1000 pods, that's just one operation, and this test
 # does not control or define the rate at which those pods get created. (I.e. this test only controls the rate
 # at which _deployments_ are created.)
+#
+# There is no need to pre-load images before the test runs, since the test starts up pods 
+# (thereby loading images) before it starts collecting any metrics.
 
 # input params (which be default come from override file or CL2... env vars)
 {{$ACTIVE_PODS_PER_NODE := DefaultParam .CL2_PODS_PER_NODE 60}}
@@ -80,8 +83,13 @@ steps:
   - Identifier: Timer
     Method: Timer
     Params:
-       action: start
-       label: overall duration  # can't just "declare" a timer, without starting it.
+      action: start
+      label: overall duration  # can't just "declare" a timer, without starting it.
+  - Identifier: PodStartupLatency
+    Method: PodStartupLatency
+    Params:
+      action: start
+      labelSelector: knarly-workload=true   # so we don't measure any kube-system pods
 
 ### Create initial set of pods
 - module:
@@ -131,3 +139,7 @@ steps:
     Method: Timer
     Params:
       action: gather
+  - Identifier: PodStartupLatency
+    Method: PodStartupLatency
+    Params:
+      action: gather        
