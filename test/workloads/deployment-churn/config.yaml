@@ -19,6 +19,7 @@ name: deployment-churn
 {{$CHURN_FRACTION := DefaultParam .CL2_CHURN_FRACTION 1.0}}  # Set below 1 for faster churn phase, IFF cleanup is set to 0
 {{$REPEATS := DefaultParam .CL2_REPEATS 1}}  # How many times to repeat the churn phase.  Set to non-zero value for longer-running tests
 {{$CLEANUP := DefaultParam .CL2_CLEANUP 1}}
+{{$POD_STARTUP_SLO_SECS := DefaultParam .CL2_POD_STARTUP_SLO_SECS 5}}  # Fail the test if P99 startup takes longer than this
 # Note on CLEANUP of pods and deployments that we create.
 # By default we do clean them up explicitly, because by default letting them just get deleted with the namespace is slow.
 # However, if delete-collection-workers has been set to a highish value (e.g. 250) in the API server params, then
@@ -89,6 +90,7 @@ steps:
     Method: PodStartupLatency
     Params:
       action: start
+      threshold: {{$POD_STARTUP_SLO_SECS}}s  # default is 5s, which is in fact the correct value as per documented SLOs, but its useful to be able to change when testing this test
       labelSelector: knarly-workload=true   # so we don't measure any kube-system pods
 
 ### Create initial set of pods
