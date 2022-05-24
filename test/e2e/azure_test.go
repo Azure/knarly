@@ -189,4 +189,69 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
+	It("Run multi cluster test", func() {
+		var result1, result2 *clusterctl.ApplyClusterTemplateAndWaitResult
+		clusterName = utils.GetClusterName(clusterNamePrefix, "aks1")
+		clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
+			ClusterProxy: bootstrapClusterProxy,
+			ConfigCluster: clusterctl.ConfigClusterInput{
+				LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
+				ClusterctlConfigPath:     clusterctlConfigPath,
+				KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
+				InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
+				Flavor:                   "aks",
+				Namespace:                namespace.Name,
+				ClusterName:              clusterName,
+				KubernetesVersion:        e2eConfig.GetVariable(utils.AKSKubernetesVersion),
+				ControlPlaneMachineCount: pointer.Int64Ptr(1),
+				WorkerMachineCount:       pointer.Int64Ptr(2),
+			},
+			WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
+			WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
+			WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+			ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
+				WaitForControlPlaneInitialized:   WaitForControlPlaneInitialized,
+				WaitForControlPlaneMachinesReady: WaitForControlPlaneMachinesReady,
+			},
+		}, result1)
+
+		clusterName = utils.GetClusterName(clusterNamePrefix, "aks2")
+		clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
+			ClusterProxy: bootstrapClusterProxy,
+			ConfigCluster: clusterctl.ConfigClusterInput{
+				LogFolder:                filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
+				ClusterctlConfigPath:     clusterctlConfigPath,
+				KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
+				InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
+				Flavor:                   "aks",
+				Namespace:                namespace.Name,
+				ClusterName:              clusterName,
+				KubernetesVersion:        e2eConfig.GetVariable(utils.AKSKubernetesVersion),
+				ControlPlaneMachineCount: pointer.Int64Ptr(1),
+				WorkerMachineCount:       pointer.Int64Ptr(2),
+			},
+			WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
+			WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
+			WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+			ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
+				WaitForControlPlaneInitialized:   WaitForControlPlaneInitialized,
+				WaitForControlPlaneMachinesReady: WaitForControlPlaneMachinesReady,
+			},
+		}, result2)
+
+		Context("Listing Namespaces in workload cluster", func() {
+			specs.ListNamespaces(ctx, specs.ClusterTestInput{
+				BootstrapClusterProxy: bootstrapClusterProxy,
+				Cluster:               result1.Cluster,
+			})
+		})
+
+		Context("Listing Namespaces in workload cluster", func() {
+			specs.ListNamespaces(ctx, specs.ClusterTestInput{
+				BootstrapClusterProxy: bootstrapClusterProxy,
+				Cluster:               result2.Cluster,
+			})
+		})
+	})
+
 })
