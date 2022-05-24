@@ -1,4 +1,4 @@
-name: Run CI E2E
+name: Run Multi-cluster Test
 on:
   pull_request_target:
     types: [ labeled ]
