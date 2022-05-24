@@ -190,7 +190,8 @@ var _ = Describe("Workload cluster creation", func() {
 	})
 
 	It("Run multi cluster test", func() {
-		var result1, result2 *clusterctl.ApplyClusterTemplateAndWaitResult
+		result1 := new(clusterctl.ApplyClusterTemplateAndWaitResult)
+		result2 := new(clusterctl.ApplyClusterTemplateAndWaitResult)
 		clusterName = utils.GetClusterName(clusterNamePrefix, "aks1")
 		clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 			ClusterProxy: bootstrapClusterProxy,
@@ -199,7 +200,7 @@ var _ = Describe("Workload cluster creation", func() {
 				ClusterctlConfigPath:     clusterctlConfigPath,
 				KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
 				InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
-				Flavor:                   "aks",
+				Flavor:                   "multi",
 				Namespace:                namespace.Name,
 				ClusterName:              clusterName,
 				KubernetesVersion:        e2eConfig.GetVariable(utils.AKSKubernetesVersion),
@@ -223,7 +224,7 @@ var _ = Describe("Workload cluster creation", func() {
 				ClusterctlConfigPath:     clusterctlConfigPath,
 				KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
 				InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
-				Flavor:                   "aks",
+				Flavor:                   "multi",
 				Namespace:                namespace.Name,
 				ClusterName:              clusterName,
 				KubernetesVersion:        e2eConfig.GetVariable(utils.AKSKubernetesVersion),
