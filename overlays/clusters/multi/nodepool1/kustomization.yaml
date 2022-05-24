@@ -1,0 +1,3 @@
+resources:
+  - ../../../nodepools/aks/system
+nameSuffix: "1"
