@@ -1,6 +1,6 @@
 module github.com/azure/knarly
 
-go 1.17
+go 1.18
 
 require (
 	github.com/Azure/aad-pod-identity v1.8.6
