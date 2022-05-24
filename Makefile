@@ -32,7 +32,7 @@ REGISTRY ?= us.gcr.io/k8s-artifacts-prod/cluster-api-azure
 IMAGE_NAME ?= cluster-api-azure-controller
 CONTROLLER_IMG ?= $(REGISTRY)/$(IMAGE_NAME)
 
-KUSTOMIZE_VER := v4.4.1
+KUSTOMIZE_VER := v4.5.2
 KUSTOMIZE_BIN := kustomize
 KUSTOMIZE := $(HACK_BIN_DIR)/$(KUSTOMIZE_BIN)
 
